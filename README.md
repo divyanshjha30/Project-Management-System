@@ -5,13 +5,13 @@
 ![Project Management System](https://img.shields.io/badge/Project-Management%20System-blue?style=for-the-badge&logo=rocket)
 ![React](https://img.shields.io/badge/React-18.3.1-61DAFB?style=for-the-badge&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178C6?style=for-the-badge&logo=typescript)
-![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase)
+![Node.js](https://img.shields.io/badge/Node.js-Backend-339933?style=for-the-badge&logo=node.js)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.4.1-38B2AC?style=for-the-badge&logo=tailwind-css)
 ![Vite](https://img.shields.io/badge/Vite-5.4.2-646CFF?style=for-the-badge&logo=vite)
 
-**A modern, full-stack project management solution built with cutting-edge technologies**
+**A modern, full-stack project management solution with React frontend and Node.js REST API**
 
-[🌟 Live Demo](#) • [📖 Documentation](#features) • [🚀 Quick Start](#quick-start) • [🛠️ Tech Stack](#tech-stack)
+[🌟 Live Demo](https://project-mngmt-system.netlify.app) • [🔗 Backend API](https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app) • [📖 Documentation](#features) • [🚀 Quick Start](#quick-start)
 
 ---
 
@@ -37,9 +37,9 @@
 
 - **🔐 Multi-Role Authentication System**
 
-  - Secure user registration and login
+  - Secure JWT-based user registration and login
   - Role-based access control (Admin/Manager/Developer)
-  - Profile management with email verification
+  - Profile management with secure authentication
 
 - **📊 Advanced Project Management**
 
@@ -62,7 +62,7 @@
 
 - **📁 File Management**
   - Upload project-related files
-  - Secure file storage with Supabase Storage
+  - Secure file storage integration
   - File association with projects and tasks
 
 ## 🚀 Quick Start
@@ -74,7 +74,6 @@ Before you begin, ensure you have the following installed:
 - **Node.js** (v16.0.0 or higher)
 - **npm** or **yarn**
 - **Git**
-- A **Supabase** account ([Sign up here](https://supabase.com))
 
 ### 🔧 Installation
 
@@ -95,32 +94,28 @@ Before you begin, ensure you have the following installed:
 
    ```bash
    # Create environment file
-   cp .env.example .env.local
+   touch .env.local
 
-   # Add your Supabase credentials
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   # Add your backend API URL
+   echo "VITE_API_URL=https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api" >> .env.local
    ```
 
-4. **Set up Supabase Database**
-
-   Run the following migrations in your Supabase SQL Editor:
-
-   - `supabase/migrations/20251115055837_create_profiles_table.sql`
-   - `supabase/migrations/20251115055917_create_projects_table.sql`
-   - `supabase/migrations/20251115055951_create_tasks_and_assignments.sql`
-   - `supabase/migrations/20251115060004_add_developer_project_policy.sql`
-   - `supabase/migrations/20251115060030_create_files_table.sql`
-
-5. **Start the development server**
+4. **Start the development server**
 
    ```bash
    npm run dev
    ```
 
-6. **Open your browser**
+5. **Open your browser**
 
    Navigate to `http://localhost:5173` and start managing your projects! 🎉
+
+### 🔗 Backend Setup
+
+This frontend requires the backend API to be running. You can either:
+
+- **Use our hosted backend**: Already configured in the environment
+- **Run locally**: Clone the [backend repository](https://github.com/divyanshjha30/Project-mngmt-Backend) and follow its setup instructions
 
 ## 🛠️ Tech Stack
 
@@ -135,8 +130,11 @@ Before you begin, ensure you have the following installed:
 
 ### Backend
 
-![Supabase](https://img.shields.io/badge/Supabase-181818?style=for-the-badge&logo=supabase&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-181818?style=for-the-badge&logo=supabase&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
 
 ### Tools & Libraries
 
@@ -149,21 +147,22 @@ Before you begin, ensure you have the following installed:
 
 ```mermaid
 graph TB
-    A[React Frontend] --> B[Supabase Client]
-    B --> C[Supabase Auth]
-    B --> D[PostgreSQL Database]
-    B --> E[Supabase Storage]
+    A[React Frontend] --> B[REST API Client]
+    B --> C[Node.js Backend API]
+    C --> D[JWT Authentication]
+    C --> E[Supabase PostgreSQL]
+    C --> F[File Storage]
 
-    D --> F[Profiles Table]
-    D --> G[Projects Table]
-    D --> H[Tasks Table]
-    D --> I[Task Assignments Table]
-    D --> J[Files Table]
+    E --> G[Profiles Table]
+    E --> H[Projects Table]
+    E --> I[Tasks Table]
+    E --> J[Task Assignments Table]
+    E --> K[Files Table]
 
     style A fill:#61DAFB
-    style C fill:#3ECF8E
-    style D fill:#336791
-    style E fill:#3ECF8E
+    style C fill:#339933
+    style D fill:#000000
+    style E fill:#336791
 ```
 
 ## 📱 User Roles & Permissions
@@ -274,6 +273,53 @@ graph TB
 | `npm run preview`   | Preview the production build locally     |
 | `npm run typecheck` | Type-check the TypeScript code           |
 
+### 🌐 API Integration
+
+This frontend connects to a Node.js REST API backend. Key API endpoints:
+
+```typescript
+// Authentication
+POST /api/auth/login
+POST /api/auth/register
+
+// Projects
+GET    /api/projects
+POST   /api/projects
+PUT    /api/projects/:id
+DELETE /api/projects/:id
+
+// Tasks
+GET    /api/tasks
+POST   /api/tasks
+PUT    /api/tasks/:id
+DELETE /api/tasks/:id
+
+// Users
+GET    /api/users
+PUT    /api/users/:id
+```
+
+### 🔑 Authentication Flow
+
+```typescript
+// Login request
+const response = await fetch(`${API_URL}/auth/login`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, password }),
+});
+
+// Store JWT token
+const { token, user } = await response.json();
+localStorage.setItem("token", token);
+
+// Use token in subsequent requests
+const headers = {
+  Authorization: `Bearer ${token}`,
+  "Content-Type": "application/json",
+};
+```
+
 ### 🤝 Contributing
 
 We welcome contributions! Please follow these steps:
@@ -291,6 +337,7 @@ We welcome contributions! Please follow these steps:
 - Use **Tailwind CSS** for styling
 - Write **clean, readable code** with proper commenting
 - Implement **proper error handling**
+- Use **custom hooks** for API interactions
 
 ## 🐛 Troubleshooting
 
@@ -300,9 +347,22 @@ We welcome contributions! Please follow these steps:
 ### Database Connection Issues
 
 ```bash
-# Ensure your Supabase URL and key are correct
-# Check if your Supabase project is active
-# Verify network connectivity
+# Check if backend API is running
+curl https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api/health
+
+# Verify API URL in environment
+echo $VITE_API_URL
+```
+
+### Authentication Issues
+
+```bash
+# Check if JWT token is stored
+# Open browser dev tools -> Application -> Local Storage
+# Look for 'token' key
+
+# Clear authentication state
+localStorage.removeItem('token');
 ```
 
 ### Build Errors
@@ -320,8 +380,7 @@ npm run typecheck
 
 ```bash
 # Ensure .env.local exists and contains:
-VITE_SUPABASE_URL=your_url_here
-VITE_SUPABASE_ANON_KEY=your_key_here
+VITE_API_URL=https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api
 ```
 
 </details>
@@ -332,11 +391,12 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 🙏 Acknowledgments
 
-- **Supabase** for providing an excellent backend-as-a-service platform
 - **React Team** for the amazing React library
+- **TypeScript** for bringing type safety to JavaScript
 - **Tailwind CSS** for the utility-first CSS framework
 - **Vite** for the lightning-fast build tool
 - **Lucide** for the beautiful icon set
+- **Node.js** community for the robust backend ecosystem
 
 ## 📞 Support
 
@@ -345,6 +405,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 **Need help? We're here for you!**
 
 [![GitHub Issues](https://img.shields.io/badge/GitHub-Issues-red?style=for-the-badge&logo=github)](https://github.com/divyanshjha30/Project-Management-System/issues)
+[![Backend API](https://img.shields.io/badge/Backend-API%20Docs-blue?style=for-the-badge&logo=swagger)](https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api-docs)
 [![Email](https://img.shields.io/badge/Email-Support-blue?style=for-the-badge&logo=gmail)](mailto:your-email@example.com)
 
 </div>
