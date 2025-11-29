@@ -92,15 +92,29 @@ Before you begin, ensure you have the following installed:
 
 3. **Set up environment variables**
 
+   **Quick Setup (Recommended):**
+   ```bash
+   # For local development:
+   ./setup-env.sh local
+   
+   # For production backend:
+   ./setup-env.sh production
+   
+   # Check current config:
+   ./setup-env.sh show
+   ```
+
+   **Manual Setup:**
    ```bash
    # Create environment file
    touch .env.local
 
-   # Add your backend API URL
-   echo "VITE_API_URL=https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api" >> .env.local
-   ```
-
-4. **Start the development server**
+   # For local development (if running backend locally):
+   echo "VITE_API_URL=http://localhost:5000/api" >> .env.local
+   
+   # OR for production backend:
+   echo "VITE_API_URL=https://project-management-system-backend-8yt4co2oa.vercel.app/api" >> .env.local
+   ```4. **Start the development server**
 
    ```bash
    npm run dev
@@ -263,6 +277,26 @@ graph TB
 
 ## 🔧 Development
 
+### 🌍 Environment Management
+
+This project includes an easy environment switcher to toggle between local and production backends:
+
+```bash
+# Switch to local development (backend at localhost:5000)
+./setup-env.sh local
+
+# Switch to production backend (deployed on Vercel)
+./setup-env.sh production
+
+# Check current environment configuration
+./setup-env.sh show
+```
+
+**Environment Variables:**
+- `VITE_API_URL`: Backend API endpoint
+- **Local**: `http://localhost:5000/api`
+- **Production**: `https://project-management-system-backend-8yt4co2oa.vercel.app/api`
+
 ### 📋 Available Scripts
 
 | Command             | Description                              |
@@ -379,8 +413,17 @@ npm run typecheck
 ### Environment Variables
 
 ```bash
-# Ensure .env.local exists and contains:
-VITE_API_URL=https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api
+# Check current API URL being used
+# Look in browser console for: "🔗 API Base URL: ..."
+
+# For local development:
+VITE_API_URL=http://localhost:5000/api
+
+# For production:
+VITE_API_URL=https://project-management-system-backend-8yt4co2oa.vercel.app/api
+
+# Verify environment is loaded correctly:
+cat .env.local
 ```
 
 </details>

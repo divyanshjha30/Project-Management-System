@@ -41,9 +41,13 @@ export const ManagerDashboard = () => {
     if (!user) return;
 
     try {
-      const dashboardData = await apiClient.getDashboard();
-      const projects = dashboardData.projects || [];
-      const tasks = dashboardData.tasks || [];
+      const [projectsResponse, tasksResponse] = await Promise.all([
+        apiClient.getProjects(),
+        apiClient.getTasks(),
+      ]);
+
+      const projects = projectsResponse.projects || [];
+      const tasks = tasksResponse.tasks || [];
 
       const completedTasks = tasks.filter(
         (t) => t.status === "COMPLETED"
@@ -92,6 +96,9 @@ export const ManagerDashboard = () => {
       <TaskManager
         project={selectedProject}
         onBack={() => setSelectedProject(null)}
+        onTaskUpdate={() => {
+          fetchStats(); // Refresh dashboard stats when tasks are updated
+        }}
       />
     );
   }

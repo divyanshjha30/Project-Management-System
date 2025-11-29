@@ -1,9 +1,13 @@
 // API client for our backend
 const API_BASE_URL =
-  "https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api";
+  import.meta.env.VITE_API_URL ||
+  "https://project-management-system-backend-8yt4co2oa.vercel.app/api";
+
+// Log the API URL being used (for debugging)
+console.log("🔗 API Base URL:", API_BASE_URL);
 
 interface User {
-  id: string;
+  user_id: string;
   username: string;
   email: string;
   role: "ADMIN" | "MANAGER" | "DEVELOPER";
@@ -28,11 +32,12 @@ interface Task {
   project_id: string;
   title: string;
   description?: string;
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
-  priority: "LOW" | "MEDIUM" | "HIGH";
-  due_date?: string;
+  status: "NEW" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED";
+  start_date?: string;
+  end_date?: string;
   created_at: string;
   updated_at: string;
+  assigned_developers?: any[];
 }
 
 class ApiClient {
@@ -142,18 +147,20 @@ class ApiClient {
 
   // Task endpoints
   async getTasks(projectId?: string): Promise<{ tasks: Task[] }> {
-    const endpoint = projectId ? `/tasks?projectId=${projectId}` : "/tasks";
+    const endpoint = projectId ? `/tasks/project/${projectId}` : "/tasks";
     return this.request(endpoint);
   }
 
-  async createTask(data: {
-    project_id: string;
-    title: string;
-    description?: string;
-    priority: "LOW" | "MEDIUM" | "HIGH";
-    due_date?: string;
-  }): Promise<Task> {
-    return this.request("/tasks", {
+  async createTask(
+    projectId: string,
+    data: {
+      title: string;
+      description?: string;
+      start_date?: string;
+      end_date?: string;
+    }
+  ): Promise<Task> {
+    return this.request(`/tasks/project/${projectId}`, {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -172,19 +179,32 @@ class ApiClient {
     });
   }
 
-  async assignTask(
+  async assignDeveloper(
     taskId: string,
-    developerIds: string[]
+    developerId: string
   ): Promise<{ message: string }> {
     return this.request(`/tasks/${taskId}/assign`, {
       method: "POST",
-      body: JSON.stringify({ developerIds }),
+      body: JSON.stringify({ developer_id: developerId }),
     });
+  }
+
+  // User management endpoints
+  async getUsers(): Promise<{ users: User[] }> {
+    return this.request("/admin/users");
+  }
+
+  async getUsersByRole(role?: string): Promise<{ users: User[] }> {
+    if (role === "DEVELOPER") {
+      return this.request("/projects/developers");
+    }
+    const endpoint = role ? `/admin/users?role=${role}` : "/admin/users";
+    return this.request(endpoint);
   }
 
   // Dashboard endpoint
   async getDashboard(): Promise<{ projects: Project[]; tasks: Task[] }> {
-    return this.request("/dashboard");
+    return this.request("/projects/dashboard");
   }
 }
 
