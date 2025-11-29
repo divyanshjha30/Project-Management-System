@@ -11,7 +11,7 @@
 
 **A modern, full-stack project management solution with React frontend and Node.js REST API**
 
-[🌟 Live Demo](https://project-mngmt-system.netlify.app) • [🔗 Backend API](https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app) • [📖 Documentation](#features) • [🚀 Quick Start](#quick-start)
+[🌟 Live Demo](https://project-management-system-fsad.netlify.app) • [🔗 Backend API](https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app) • [📖 Documentation](#features) • [🚀 Quick Start](#quick-start)
 
 ---
 
