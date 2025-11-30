@@ -9,7 +9,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.4.1-38B2AC?style=for-the-badge&logo=tailwind-css)
 ![Vite](https://img.shields.io/badge/Vite-5.4.2-646CFF?style=for-the-badge&logo=vite)
 
-**A modern, full-stack project management solution with React frontend and Node.js REST API**
+**A complete, web-based enterprise project management solution with React frontend and Node.js REST API**
 
 [🌟 Live Demo](https://project-management-system-fsad.netlify.app) • [🔗 Backend API](https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app) • [📖 Documentation](#features) • [🚀 Quick Start](#quick-start)
 
@@ -18,6 +18,27 @@
 <img src="https://via.placeholder.com/800x400/1a1a2e/ffffff?text=Project+Management+System+Dashboard" alt="Dashboard Preview" width="100%" style="border-radius: 10px; margin: 20px 0;" />
 
 </div>
+
+## 🎯 Project Goals & Current Status
+
+### 📋 Enterprise Requirements Achieved
+
+| **Core Requirement** | **Status** | **Implementation** |
+|---------------------|------------|-------------------|
+| **Dashboard Homepage** | ✅ Complete | Role-based dashboards with project snapshots, task lists, and progress tracking |
+| **Project Planner** | ✅ Complete | Task creation, scheduling, team assignments, and deadline management |
+| **Project Reporting** | 🔄 Partial | Dashboard analytics implemented, advanced reports in development |
+| **Online Storage** | ✅ Complete | File upload, sharing, and centralized document management |
+| **Email Alerts** | ✅ Complete | OTP verification, notifications, and automated email system |
+| **User Management** | ✅ Complete | Three-tier role system (Admin/Manager/Developer) with secure access |
+
+### 👥 User Role Implementation
+
+| **Role** | **Capabilities** | **Dashboard Features** |
+|----------|------------------|----------------------|
+| **🔑 Admin** | Full system control | User management, system settings, all projects oversight |
+| **👔 Manager** | Project & team management | Create projects, assign tasks, team performance tracking |
+| **💻 Developer** | Task execution & updates | View assignments, update progress, file collaboration |
 
 ## ✨ Features
 
