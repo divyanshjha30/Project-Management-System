@@ -3,18 +3,24 @@ import { Project, Task, apiClient } from "../../lib/api";
 import {
   ArrowLeft,
   Plus,
-  Calendar,
+  Calendar as CalendarIcon,
   User,
   CheckCircle,
   Clock,
   AlertCircle,
+  List,
+  LayoutGrid,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { TaskForm } from "./TaskForm";
+
+type ViewType = "list" | "board" | "calendar";
 
 interface TaskManagerProps {
   project: Project;
   onBack: () => void;
-  onTaskUpdate?: () => void; // Add callback for parent updates
+  onTaskUpdate?: () => void;
 }
 
 export const TaskManager = ({
@@ -25,6 +31,9 @@ export const TaskManager = ({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [currentView, setCurrentView] = useState<ViewType>("board");
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
   const fetchTasks = async () => {
     try {
@@ -40,139 +49,396 @@ export const TaskManager = ({
 
   useEffect(() => {
     fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.project_id]);
 
   const getStatusIcon = (status: Task["status"]) => {
     switch (status) {
       case "NEW":
-        return <AlertCircle className="w-5 h-5 text-blue-500" />;
+        return <AlertCircle className="w-5 h-5" style={{ color: "var(--brand)" }} />;
       case "ASSIGNED":
-        return <User className="w-5 h-5 text-yellow-500" />;
+        return <User className="w-5 h-5 text-yellow-400" />;
       case "IN_PROGRESS":
-        return <Clock className="w-5 h-5 text-orange-500" />;
+        return <Clock className="w-5 h-5 text-blue-400" />;
       case "COMPLETED":
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return <CheckCircle className="w-5 h-5 text-green-400" />;
       default:
-        return <AlertCircle className="w-5 h-5 text-gray-500" />;
+        return <AlertCircle className="w-5 h-5 opacity-50" />;
     }
   };
 
   const getStatusColor = (status: Task["status"]) => {
     switch (status) {
       case "NEW":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-[var(--brand)]/20 text-[var(--brand)]";
       case "ASSIGNED":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-500/20 text-yellow-400";
       case "IN_PROGRESS":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return "bg-blue-500/20 text-blue-400";
       case "COMPLETED":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-green-500/20 text-green-400";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-500/20 text-gray-400";
     }
   };
-  return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="flex items-center gap-4 mb-8">
-        <button
-          onClick={onBack}
-          className="p-2 hover:bg-gray-100 rounded-lg transition"
-        >
-          <ArrowLeft className="w-6 h-6 text-gray-600" />
-        </button>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            {project.project_name}
-          </h1>
-          <p className="text-gray-600">{project.description}</p>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Tasks ({tasks.length})
-          </h2>
-          <button
-            onClick={() => setShowTaskForm(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"
+  const handleDragStart = (task: Task) => {
+    setDraggedTask(task);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (newStatus: Task["status"]) => {
+    if (!draggedTask) return;
+
+    try {
+      await apiClient.updateTask(draggedTask.task_id, { status: newStatus });
+      setTasks(tasks.map(t => 
+        t.task_id === draggedTask.task_id 
+          ? { ...t, status: newStatus } 
+          : t
+      ));
+      setDraggedTask(null);
+      onTaskUpdate?.();
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      alert("Failed to update task status");
+    }
+  };
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    return { daysInMonth, startingDayOfWeek, year, month };
+  };
+
+  const getTasksForDate = (date: string) => {
+    return tasks.filter(task => {
+      if (!task.end_date) return false;
+      const taskDate = new Date(task.end_date).toISOString().split('T')[0];
+      return taskDate === date;
+    });
+  };
+
+  const formatDate = (year: number, month: number, day: number) => {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(newDate.getMonth() - 1);
+      } else {
+        newDate.setMonth(newDate.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const renderBoardView = () => {
+    const columns = [
+      { id: "NEW" as const, name: "To Do", tasks: tasks.filter(t => t.status === "NEW") },
+      { id: "ASSIGNED" as const, name: "Assigned", tasks: tasks.filter(t => t.status === "ASSIGNED") },
+      { id: "IN_PROGRESS" as const, name: "In Progress", tasks: tasks.filter(t => t.status === "IN_PROGRESS") },
+      { id: "COMPLETED" as const, name: "Done", tasks: tasks.filter(t => t.status === "COMPLETED") },
+    ];
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {columns.map(column => (
+          <div 
+            key={column.id} 
+            className="glass rounded-xl p-4"
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop(column.id)}
           >
-            <Plus className="w-5 h-5" />
-            Add Task
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="text-xl text-gray-600">Loading tasks...</div>
-          </div>
-        ) : tasks.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No tasks yet</p>
-            <p className="text-gray-400 text-sm mt-2">
-              Create your first task to get started
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tasks.map((task) => (
-              <div
-                key={task.task_id}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold text-gray-800 text-lg">
-                    {task.title}
-                  </h3>
-                  {getStatusIcon(task.status)}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">{column.name}</h3>
+              <span className="text-xs opacity-60 neo-icon w-6 h-6 flex items-center justify-center rounded">
+                {column.tasks.length}
+              </span>
+            </div>
+            <div className="space-y-3 min-h-[200px]">
+              {column.tasks.map(task => (
+                <div
+                  key={task.task_id}
+                  draggable
+                  onDragStart={() => handleDragStart(task)}
+                  className="bg-[var(--tile-dark)] p-4 rounded-lg hover:bg-white/5 transition-all cursor-move border border-white/5 hover:border-[var(--brand)]/30"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="text-sm font-medium flex-1">{task.title}</h4>
+                    {getStatusIcon(task.status)}
+                  </div>
+                  {task.description && (
+                    <p className="text-xs opacity-70 mb-3 line-clamp-2">
+                      {task.description}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between text-xs opacity-60">
+                    {task.end_date && (
+                      <div className="flex items-center gap-1">
+                        <CalendarIcon className="w-3 h-3" />
+                        <span>{new Date(task.end_date).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {task.assigned_developers && task.assigned_developers.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        <span>{task.assigned_developers.length}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
+              ))}
+              {column.tasks.length === 0 && (
+                <div className="flex items-center justify-center h-32 border-2 border-dashed border-white/10 rounded-lg">
+                  <p className="text-xs opacity-40">Drop tasks here</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
-                {task.description && (
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                    {task.description}
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between mb-3">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                      task.status
-                    )}`}
-                  >
+  const renderListView = () => {
+    return (
+      <div className="glass rounded-xl overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/5">
+              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">Task</th>
+              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">Status</th>
+              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">Assigned</th>
+              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">Due Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tasks.map(task => (
+              <tr
+                key={task.task_id}
+                className="border-t border-white/5 hover:bg-white/5 transition-colors group"
+              >
+                <td className="py-3 px-4">
+                  <div>
+                    <div className="font-medium text-sm">{task.title}</div>
+                    {task.description && (
+                      <div className="text-xs opacity-70 mt-1 line-clamp-1">
+                        {task.description}
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="py-3 px-4">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
                     {task.status.replace("_", " ")}
                   </span>
-                  {task.assigned_developers &&
-                    task.assigned_developers.length > 0 && (
-                      <span className="text-xs text-gray-500">
-                        {task.assigned_developers.length} assigned
-                      </span>
-                    )}
-                </div>
-
-                <div className="space-y-1 text-xs text-gray-500">
-                  {task.start_date && (
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      <span>
-                        Start: {new Date(task.start_date).toLocaleDateString()}
-                      </span>
+                </td>
+                <td className="py-3 px-4">
+                  {task.assigned_developers && task.assigned_developers.length > 0 ? (
+                    <div className="flex items-center gap-1 text-sm opacity-70">
+                      <User className="w-4 h-4" />
+                      <span>{task.assigned_developers.length} developer{task.assigned_developers.length > 1 ? 's' : ''}</span>
                     </div>
+                  ) : (
+                    <span className="text-xs opacity-50">Unassigned</span>
                   )}
-                  {task.end_date && (
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      <span>
-                        Due: {new Date(task.end_date).toLocaleDateString()}
-                      </span>
+                </td>
+                <td className="py-3 px-4">
+                  {task.end_date ? (
+                    <div className="flex items-center gap-1 text-sm opacity-70">
+                      <CalendarIcon className="w-4 h-4" />
+                      <span>{new Date(task.end_date).toLocaleDateString()}</span>
                     </div>
+                  ) : (
+                    <span className="text-xs opacity-50">No due date</span>
                   )}
-                </div>
-              </div>
+                </td>
+              </tr>
             ))}
+          </tbody>
+        </table>
+        {tasks.length === 0 && (
+          <div className="text-center py-12">
+            <div className="neo-icon w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-2xl">
+              <CalendarIcon className="w-8 h-8 opacity-30" />
+            </div>
+            <p className="opacity-70">No tasks yet</p>
+            <p className="text-sm opacity-50 mt-1">Create your first task to get started</p>
           </div>
         )}
       </div>
+    );
+  };
+
+  const renderCalendarView = () => {
+    const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(currentDate);
+    const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    const days = [];
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(
+        <div key={`empty-${i}`} className="min-h-[120px] bg-[var(--tile-dark)] border border-white/5 rounded-lg"></div>
+      );
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = formatDate(year, month, day);
+      const tasksForDay = getTasksForDate(dateStr);
+      const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
+
+      days.push(
+        <div
+          key={day}
+          className={`min-h-[120px] bg-[var(--tile-dark)] border border-white/5 rounded-lg p-2 hover:bg-white/5 transition-colors ${
+            isToday ? 'ring-2 ring-[var(--brand)]' : ''
+          }`}
+        >
+          <div className={`text-sm font-medium mb-2 ${isToday ? 'text-[var(--brand)]' : 'opacity-70'}`}>
+            {day}
+          </div>
+          <div className="space-y-1">
+            {tasksForDay.map(task => (
+              <div
+                key={task.task_id}
+                className={`text-xs p-1.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
+                  task.status === 'COMPLETED' ? 'bg-green-500/20 text-green-400' :
+                  task.status === 'IN_PROGRESS' ? 'bg-blue-500/20 text-blue-400' :
+                  task.status === 'ASSIGNED' ? 'bg-yellow-500/20 text-yellow-400' :
+                  'bg-[var(--brand)]/20 text-[var(--brand)]'
+                }`}
+                title={task.title}
+              >
+                {task.title}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="glass rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">{monthName}</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigateMonth('prev')}
+              className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="btn-ghost px-4"
+            >
+              Today
+            </button>
+            <button
+              onClick={() => navigateMonth('next')}
+              className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-2">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div key={day} className="p-3 text-center text-sm font-semibold opacity-70">
+              {day}
+            </div>
+          ))}
+          {days}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="glass rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold">{project.project_name}</h1>
+              <p className="text-sm opacity-70 mt-1">{project.description}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentView('list')}
+              className={`neo-icon w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
+                currentView === 'list' ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setCurrentView('board')}
+              className={`neo-icon w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
+                currentView === 'board' ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
+              title="Board View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setCurrentView('calendar')}
+              className={`neo-icon w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
+                currentView === 'calendar' ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
+              title="Calendar View"
+            >
+              <CalendarIcon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowTaskForm(true)}
+              className="btn-primary ml-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Task</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="glass rounded-xl p-8">
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin neo-icon w-12 h-12 flex items-center justify-center rounded-lg">
+                <Clock className="w-6 h-6" style={{ color: "var(--brand)" }} />
+              </div>
+              <div className="opacity-70">Loading tasks...</div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {currentView === 'list' && renderListView()}
+          {currentView === 'board' && renderBoardView()}
+          {currentView === 'calendar' && renderCalendarView()}
+        </>
+      )}
 
       {showTaskForm && (
         <TaskForm
@@ -181,7 +447,7 @@ export const TaskManager = ({
           onSuccess={() => {
             setShowTaskForm(false);
             fetchTasks();
-            onTaskUpdate?.(); // Notify parent dashboard
+            onTaskUpdate?.();
           }}
         />
       )}

@@ -84,30 +84,30 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800">
+    <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="neo-tile w-full max-w-md">
+        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+          <h2 className="text-xl font-semibold text-white">
             Create New Task
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            className="neo-icon hover:bg-gray-800 transition-all"
           >
-            <X className="w-5 h-5 text-gray-600" />
+            <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-700">
-              <strong>Project:</strong> {project.project_name}
+          <div className="glass p-3 border border-brand/30">
+            <p className="text-sm text-gray-300">
+              <strong className="text-brand">Project:</strong> {project.project_name}
             </p>
           </div>
 
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <Type className="w-4 h-4" />
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+              <Type className="w-4 h-4 text-brand" />
               Task Title *
             </label>
             <input
@@ -116,14 +116,14 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
               value={formData.title}
               onChange={handleChange}
               placeholder="Enter task title"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="input"
               required
             />
           </div>
 
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <FileText className="w-4 h-4" />
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+              <FileText className="w-4 h-4 text-brand" />
               Description
             </label>
             <textarea
@@ -132,17 +132,17 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
               onChange={handleChange}
               placeholder="Enter task description (optional)"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="input resize-none"
             />
           </div>
 
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <Users className="w-4 h-4" />
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+              <Users className="w-4 h-4 text-brand" />
               Assign to Developer
             </label>
             {loadingDevelopers ? (
-              <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+              <div className="input bg-gray-800 text-gray-500">
                 Loading developers...
               </div>
             ) : (
@@ -150,7 +150,7 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
                 name="assigned_developer"
                 value={formData.assigned_developer}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="select"
               >
                 <option value="">Select a developer (optional)</option>
                 {developers.map((dev) => (
@@ -169,8 +169,8 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4" />
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                <Calendar className="w-4 h-4 text-brand" />
                 Start Date
               </label>
               <input
@@ -178,13 +178,13 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
                 name="start_date"
                 value={formData.start_date}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input"
               />
             </div>
 
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4" />
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                <Calendar className="w-4 h-4 text-brand" />
                 End Date
               </label>
               <input
@@ -193,7 +193,7 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
                 value={formData.end_date}
                 onChange={handleChange}
                 min={formData.start_date || undefined}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input"
               />
             </div>
           </div>
@@ -202,14 +202,14 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
             <button
               type="submit"
               disabled={loading || !formData.title.trim()}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Creating..." : "Create Task"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition"
+              className="btn-ghost px-4 py-2"
             >
               Cancel
             </button>

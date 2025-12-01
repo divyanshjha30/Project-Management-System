@@ -28,7 +28,7 @@ export const HomePage = ({ user, onEnter, onLogin, onRegister }) => {
   const parallaxOffset = scrollY * 0.25;
 
   return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 transition-colors">
+    <div className="min-h-screen  bg-neutral-900 text-neutral-200 transition-colors">
       {/* Navigation (glass) */}
       <nav className="fixed top-0 w-full z-50">
         <div className="mx-auto max-w-7xl px-6 py-4">
@@ -182,7 +182,7 @@ export const HomePage = ({ user, onEnter, onLogin, onRegister }) => {
             ].map((f, i) => (
               <div key={i} className="feature-card glass flex flex-col p-6 rounded-xl">
                 <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-lg mb-4">
-                  <f.icon className="w-6 h-6" />
+                  <f.icon className="w-6 h-6 text-black" />
                 </div>
                 <h3 className="font-medium mb-2">{f.title}</h3>
                 <p className="text-sm opacity-70 leading-relaxed">{f.desc}</p>
@@ -263,7 +263,7 @@ export const HomePage = ({ user, onEnter, onLogin, onRegister }) => {
         </div>
     </footer>
 
-    {/* Styles */}}
+    {/* Styles */}
       <style>{`
         .glass {
           background: rgba(255,255,255,0.55);

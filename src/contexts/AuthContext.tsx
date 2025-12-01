@@ -39,8 +39,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Check for existing token on app load
-    const storedToken = localStorage.getItem("authToken");
-    const storedUser = localStorage.getItem("authUser");
+    const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
 
     if (storedToken && storedUser) {
       try {
@@ -50,8 +50,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         apiClient.setToken(storedToken);
       } catch (error) {
         console.error("Error parsing stored user data:", error);
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("authUser");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
       }
     }
 
@@ -64,7 +64,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setToken(response.token);
       setUser(response.user);
       apiClient.setToken(response.token);
-      localStorage.setItem("authUser", JSON.stringify(response.user));
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.user));
     } catch (error) {
       throw error;
     }
@@ -77,8 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     role: "ADMIN" | "MANAGER" | "DEVELOPER"
   ) => {
     try {
-      // Note: This method is now only used for the old flow
-      // New registration flow handles OTP verification in the Register component
+      // Registration with OTP verification
       const response = await apiClient.register({
         username,
         email,
@@ -86,13 +86,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role,
       });
 
-      // If registration returns a token (old flow), set user data
+      // If registration returns a token (email already verified), set user data
       if ((response as any).token) {
         const authResponse = response as any;
         setToken(authResponse.token);
         setUser(authResponse.user);
         apiClient.setToken(authResponse.token);
-        localStorage.setItem("authUser", JSON.stringify(authResponse.user));
+        localStorage.setItem("token", authResponse.token);
+        localStorage.setItem("user", JSON.stringify(authResponse.user));
       }
 
       return response;
@@ -105,16 +106,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setToken(null);
     apiClient.setToken(null);
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("authUser");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
   const setUserFromOTP = (authToken: string, userData: User) => {
     setToken(authToken);
     setUser(userData);
     apiClient.setToken(authToken);
-    localStorage.setItem("authToken", authToken);
-    localStorage.setItem("authUser", JSON.stringify(userData));
+    localStorage.setItem("token", authToken);
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   return (

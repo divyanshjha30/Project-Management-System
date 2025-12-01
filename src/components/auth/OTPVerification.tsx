@@ -64,7 +64,7 @@ export const OTPVerification = ({
 
       {/* Main card */}
       <div className="relative z-10 w-full max-w-md">
-        <div className="neo-tile rounded-2xl p-8">
+        <div className="dark:glass rounded-2xl p-8">
           {/* Icon container */}
           <div className="flex items-center justify-center mb-8">
             <div className="neo-icon w-20 h-20 rounded-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300">

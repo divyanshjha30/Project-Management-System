@@ -1,24 +1,30 @@
 // API client for our backend
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://project-management-system-backend-service.vercel.app/api";
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 // Log the API URL being used (for debugging)
 console.log("🔗 API Base URL:", API_BASE_URL);
 
-interface User {
+export interface User {
   user_id: string;
   username: string;
   email: string;
   role: "ADMIN" | "MANAGER" | "DEVELOPER";
 }
 
-interface AuthResponse {
+export interface LoginResponse {
   token: string;
   user: User;
 }
 
-interface Project {
+export interface RegisterResponse {
+  message: string;
+  user?: User;
+  token?: string;
+  tempUserId?: string;
+}
+
+export interface Project {
   project_id: string;
   project_name: string;
   description: string;
@@ -27,7 +33,7 @@ interface Project {
   updated_at: string;
 }
 
-interface Task {
+export interface Task {
   task_id: string;
   project_id: string;
   title: string;
@@ -41,38 +47,33 @@ interface Task {
 }
 
 class ApiClient {
-  private baseUrl: string;
-  private token: string | null;
+  private token: string | null = null;
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
-    this.token = localStorage.getItem("authToken");
+  constructor() {
+    // Initialize token from localStorage
+    this.token = localStorage.getItem("token");
   }
 
   setToken(token: string | null) {
     this.token = token;
     if (token) {
-      localStorage.setItem("authToken", token);
+      localStorage.setItem("token", token);
     } else {
-      localStorage.removeItem("authToken");
+      localStorage.removeItem("token");
     }
   }
 
-  private async request(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<any> {
-    const url = `${this.baseUrl}${endpoint}`;
-    const headers: Record<string, string> = {
+  private async request(endpoint: string, options: RequestInit = {}) {
+    const headers: HeadersInit = {
       "Content-Type": "application/json",
-      ...(options.headers as Record<string, string>),
+      ...options.headers,
     };
 
     if (this.token) {
-      headers["Authorization"] = `Bearer ${this.token}`;
+      headers.Authorization = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(url, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
     });
@@ -80,7 +81,7 @@ class ApiClient {
     if (!response.ok) {
       const error = await response
         .json()
-        .catch(() => ({ message: "Network error" }));
+        .catch(() => ({ message: "Request failed" }));
       throw new Error(error.message || "Request failed");
     }
 
@@ -88,19 +89,32 @@ class ApiClient {
   }
 
   // Auth endpoints
+  async login(data: {
+    email: string;
+    password: string;
+  }): Promise<LoginResponse> {
+    return this.request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
   async register(data: {
     username: string;
     email: string;
     password: string;
     role: "ADMIN" | "MANAGER" | "DEVELOPER";
-  }): Promise<{ message: string; tempUserId?: string }> {
+  }): Promise<RegisterResponse> {
     return this.request("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async verifyOTP(data: { email: string; otp: string }): Promise<AuthResponse> {
+  async verifyOTP(data: {
+    email: string;
+    otp: string;
+  }): Promise<LoginResponse> {
     return this.request("/auth/verify-otp", {
       method: "POST",
       body: JSON.stringify(data),
@@ -109,16 +123,6 @@ class ApiClient {
 
   async resendOTP(data: { email: string }): Promise<{ message: string }> {
     return this.request("/auth/resend-otp", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async login(data: {
-    email: string;
-    password: string;
-  }): Promise<AuthResponse> {
-    return this.request("/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -220,7 +224,40 @@ class ApiClient {
   async getDashboard(): Promise<{ projects: Project[]; tasks: Task[] }> {
     return this.request("/projects/dashboard");
   }
+
+  // Generic CRUD operations
+  async get(endpoint: string) {
+    return this.request(endpoint, {
+      method: "GET",
+    });
+  }
+
+  async post(endpoint: string, data: any) {
+    return this.request(endpoint, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async patch(endpoint: string, data: any) {
+    return this.request(endpoint, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async delete(endpoint: string) {
+    return this.request(endpoint, {
+      method: "DELETE",
+    });
+  }
+
+  async put(endpoint: string, data: any) {
+    return this.request(endpoint, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
 }
 
-export const apiClient = new ApiClient(API_BASE_URL);
-export type { User, AuthResponse, Project, Task };
+export const apiClient = new ApiClient();

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { apiClient, Project } from "../../lib/api";
-import { FolderOpen, Trash2, Edit2, Eye } from "lucide-react";
+import { FolderOpen, Trash2, Edit2, Eye, Calendar } from "lucide-react";
 
 interface ProjectListProps {
   projects: Project[];
@@ -36,63 +36,68 @@ export const ProjectList = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-      <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-          <FolderOpen className="w-6 h-6" />
+    <div className="glass rounded-xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-white/5">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <FolderOpen className="w-6 h-6" style={{ color: "var(--brand)" }} />
           My Projects
         </h2>
       </div>
 
       {projects.length === 0 ? (
         <div className="p-12 text-center">
-          <FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">No projects yet</p>
-          <p className="text-gray-400 text-sm">
+          <div className="neo-icon w-20 h-20 mx-auto mb-4 flex items-center justify-center rounded-2xl">
+            <FolderOpen className="w-10 h-10 opacity-30" />
+          </div>
+          <p className="text-lg mb-2">No projects yet</p>
+          <p className="text-sm opacity-70">
             Create your first project to get started
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-white/5">
           {projects.map((project) => (
             <div
               key={project.project_id}
-              className="p-6 hover:bg-gray-50 transition"
+              className="p-6 hover:bg-white/5 transition-all group"
             >
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                <div className="flex-1 cursor-pointer" onClick={() => onSelectProject(project)}>
+                  <h3 className="text-lg font-semibold mb-2 group-hover:text-[var(--brand)] transition-colors">
                     {project.project_name}
                   </h3>
-                  <p className="text-gray-600 mb-3">
+                  <p className="opacity-70 mb-3 text-sm">
                     {project.description || "No description"}
                   </p>
-                  <p className="text-sm text-gray-500">
-                    Created {new Date(project.created_at).toLocaleDateString()}
-                  </p>
+                  <div className="flex items-center gap-4 text-xs opacity-60">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>Created {new Date(project.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex gap-2 ml-4">
+                <div className="flex gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => onSelectProject(project)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
+                    className="neo-icon w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10"
                     title="View tasks"
                   >
-                    <Eye className="w-5 h-5" />
+                    <Eye className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setEditingProject(project)}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded transition"
+                    className="neo-icon w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10"
                     title="Edit project"
                   >
-                    <Edit2 className="w-5 h-5" />
+                    <Edit2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(project.project_id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+                    className="neo-icon w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-500/20"
                     title="Delete project"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4 text-red-400" />
                   </button>
                 </div>
               </div>
