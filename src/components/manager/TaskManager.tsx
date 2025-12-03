@@ -18,9 +18,12 @@ import {
   Check,
   X,
   Edit2,
+  MessageSquare,
+  Eye,
 } from "lucide-react";
 import { TaskForm } from "./TaskForm";
 import { TaskEditModal } from "./TaskEditModal";
+import { TaskCommentsModal } from "./TaskCommentsModal";
 import { FileUploader } from "../files/FileUploader";
 import { FileLibrary } from "../files/FileLibrary";
 
@@ -434,10 +437,12 @@ export const TaskManager = ({
   const [loading, setLoading] = useState(true);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [commentsTask, setCommentsTask] = useState<Task | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>("board");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [showEditProject, setShowEditProject] = useState(false);
+  const [fileRefreshKey, setFileRefreshKey] = useState(0);
 
   const fetchTasks = async () => {
     try {
@@ -595,20 +600,55 @@ export const TaskManager = ({
                   key={task.task_id}
                   draggable
                   onDragStart={() => handleDragStart(task)}
-                  className="bg-[var(--tile-dark)] p-4 rounded-lg hover:bg-white/5 transition-all cursor-move border border-white/5 hover:border-[var(--brand)]/30 group"
+                  onClick={async () => {
+                    try {
+                      const freshTask = await apiClient.getTask(task.task_id);
+                      setSelectedTask(freshTask);
+                    } catch (error) {
+                      console.error("Error fetching task:", error);
+                      setSelectedTask(task);
+                    }
+                  }}
+                  className="bg-[var(--tile-dark)] p-4 rounded-lg hover:bg-white/5 transition-all cursor-pointer border border-white/5 hover:border-[var(--brand)]/30 group"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h4 className="text-sm font-medium flex-1">{task.title}</h4>
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          setSelectedTask(task);
+                          try {
+                            const freshTask = await apiClient.getTask(
+                              task.task_id
+                            );
+                            setCommentsTask(freshTask);
+                          } catch (error) {
+                            console.error("Error fetching task:", error);
+                            setCommentsTask(task);
+                          }
+                        }}
+                        className="neo-icon w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-purple-500/20"
+                        title="View Comments"
+                      >
+                        <MessageSquare className="w-3 h-3 text-purple-400" />
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const freshTask = await apiClient.getTask(
+                              task.task_id
+                            );
+                            setSelectedTask(freshTask);
+                          } catch (error) {
+                            console.error("Error fetching task:", error);
+                            setSelectedTask(task);
+                          }
                         }}
                         className="neo-icon w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--brand)]/20"
-                        title="Edit Task"
+                        title="View Task"
                       >
-                        <Edit2
+                        <Eye
                           className="w-3 h-3"
                           style={{ color: "var(--brand)" }}
                         />
@@ -727,13 +767,40 @@ export const TaskManager = ({
                   )}
                 </td>
                 <td className="py-3 px-4">
-                  <div className="flex items-center justify-center">
+                  <div className="flex items-center justify-center gap-2">
                     <button
-                      onClick={() => setSelectedTask(task)}
-                      className="neo-icon w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--brand)]/20"
-                      title="Edit Task"
+                      onClick={async () => {
+                        try {
+                          const freshTask = await apiClient.getTask(
+                            task.task_id
+                          );
+                          setCommentsTask(freshTask);
+                        } catch (error) {
+                          console.error("Error fetching task:", error);
+                          setCommentsTask(task);
+                        }
+                      }}
+                      className="neo-icon w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-purple-500/20"
+                      title="View Comments"
                     >
-                      <Edit2
+                      <MessageSquare className="w-4 h-4 text-purple-400" />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const freshTask = await apiClient.getTask(
+                            task.task_id
+                          );
+                          setSelectedTask(freshTask);
+                        } catch (error) {
+                          console.error("Error fetching task:", error);
+                          setSelectedTask(task);
+                        }
+                      }}
+                      className="neo-icon w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--brand)]/20"
+                      title="View Task"
+                    >
+                      <Eye
                         className="w-4 h-4"
                         style={{ color: "var(--brand)" }}
                       />
@@ -862,10 +929,8 @@ export const TaskManager = ({
   };
 
   const handleFileUploadSuccess = () => {
-    // Refresh file library by re-rendering
-    if (currentView === "files") {
-      // The FileLibrary component will automatically refresh
-    }
+    // Force FileLibrary to refresh by changing key
+    setFileRefreshKey((prev) => prev + 1);
   };
 
   const renderFilesView = () => {
@@ -884,6 +949,7 @@ export const TaskManager = ({
           {/* File Library */}
           <div className="lg:col-span-2">
             <FileLibrary
+              key={fileRefreshKey}
               projectId={project.project_id}
               onFileSelect={() => {}}
             />
@@ -1025,6 +1091,14 @@ export const TaskManager = ({
             fetchTasks();
             onTaskUpdate?.();
           }}
+        />
+      )}
+
+      {/* Task Comments Modal */}
+      {commentsTask && (
+        <TaskCommentsModal
+          task={commentsTask}
+          onClose={() => setCommentsTask(null)}
         />
       )}
 

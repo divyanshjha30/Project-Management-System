@@ -21,10 +21,12 @@ import {
   UserPlus,
   Target,
   Award,
+  MessageSquare,
 } from "lucide-react";
 import { FileLibrary } from "../files/FileLibrary";
 import { TaskManager } from "../manager/TaskManager";
 import { TaskEditModal } from "../manager/TaskEditModal";
+import { TaskCommentsModal } from "../manager/TaskCommentsModal";
 
 interface DashboardStats {
   totalTasks: number;
@@ -50,6 +52,7 @@ export const DeveloperDashboard = () => {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [commentsTask, setCommentsTask] = useState<Task | null>(null);
   const [activeTab, setActiveTab] = useState<"tasks" | "projects" | "teams">(
     "tasks"
   );
@@ -315,7 +318,10 @@ export const DeveloperDashboard = () => {
         {/* Tab Navigation */}
         <div className="flex gap-2">
           <button
-            onClick={() => setActiveTab("tasks")}
+            onClick={() => {
+              setActiveTab("tasks");
+              fetchDeveloperTasks();
+            }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === "tasks"
                 ? "bg-white/10 text-white"
@@ -326,7 +332,10 @@ export const DeveloperDashboard = () => {
             My Tasks
           </button>
           <button
-            onClick={() => setActiveTab("projects")}
+            onClick={() => {
+              setActiveTab("projects");
+              fetchDeveloperProjects();
+            }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === "projects"
                 ? "bg-white/10 text-white"
@@ -337,7 +346,10 @@ export const DeveloperDashboard = () => {
             My Projects
           </button>
           <button
-            onClick={() => setActiveTab("teams")}
+            onClick={() => {
+              setActiveTab("teams");
+              fetchDeveloperTeams();
+            }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === "teams"
                 ? "bg-white/10 text-white"
@@ -464,14 +476,13 @@ export const DeveloperDashboard = () => {
                 {filteredTasks.map((task) => (
                   <div
                     key={task.task_id}
-                    className="p-6 hover:bg-white/5 transition-all group cursor-pointer"
-                    onClick={() => handleTaskClick(task)}
+                    className="p-6 hover:bg-white/5 transition-all group"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           {getStatusIcon(task.status)}
-                          <h3 className="text-lg font-semibold group-hover:text-[var(--brand)] transition-colors">
+                          <h3 className="text-lg font-semibold">
                             {task.title}
                           </h3>
                         </div>
@@ -502,7 +513,7 @@ export const DeveloperDashboard = () => {
                         </div>
                       </div>
 
-                      <div className="ml-4">
+                      <div className="ml-4 flex flex-col items-end gap-2">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
                             task.status
@@ -510,6 +521,37 @@ export const DeveloperDashboard = () => {
                         >
                           {task.status.replace("_", " ")}
                         </span>
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => {
+                              const fetchTask = async () => {
+                                try {
+                                  const freshTask = await apiClient.getTask(
+                                    task.task_id
+                                  );
+                                  setCommentsTask(freshTask);
+                                } catch (error) {
+                                  console.error("Error fetching task:", error);
+                                  setCommentsTask(task);
+                                }
+                              };
+                              fetchTask();
+                            }}
+                            className="btn-ghost text-sm px-3 py-1.5 flex items-center gap-2"
+                            title="View Comments"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            Comments
+                          </button>
+                          <button
+                            onClick={() => handleTaskClick(task)}
+                            className="btn-primary text-sm px-3 py-1.5 flex items-center gap-2"
+                            title="View Task"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -591,7 +633,10 @@ export const DeveloperDashboard = () => {
                               <div
                                 key={task.task_id}
                                 className="bg-[var(--tile-dark)] rounded-lg p-3 cursor-pointer hover:bg-white/5 transition-colors"
-                                onClick={() => handleTaskClick(task)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTaskClick(task);
+                                }}
                               >
                                 <div className="flex items-center gap-2 mb-2">
                                   {getStatusIcon(task.status)}
@@ -737,6 +782,14 @@ export const DeveloperDashboard = () => {
             await fetchDeveloperProjects();
             setSelectedTask(null);
           }}
+        />
+      )}
+
+      {/* Task Comments Modal */}
+      {commentsTask && (
+        <TaskCommentsModal
+          task={commentsTask}
+          onClose={() => setCommentsTask(null)}
         />
       )}
 

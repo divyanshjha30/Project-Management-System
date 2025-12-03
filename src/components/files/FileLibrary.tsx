@@ -181,7 +181,7 @@ export const FileLibrary = ({
 
     try {
       await apiClient.deleteFile(file.file_id);
-      setFiles((prev) => prev.filter((f) => f.file_id !== file.file_id));
+      await fetchFiles(); // Refresh the file list
     } catch (error) {
       console.error("Error deleting file:", error);
       setError(

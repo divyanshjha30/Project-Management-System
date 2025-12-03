@@ -145,7 +145,11 @@ export const ManagerDashboard = () => {
     return (
       <TaskManager
         project={selectedProject}
-        onBack={() => setSelectedProject(null)}
+        onBack={async () => {
+          setSelectedProject(null);
+          await fetchProjects();
+        }}
+        onTaskUpdate={fetchProjects}
       />
     );
   }
@@ -242,7 +246,11 @@ export const ManagerDashboard = () => {
       <div className="glass rounded-xl p-2">
         <div className="flex gap-2">
           <button
-            onClick={() => setActiveTab("projects")}
+            onClick={async () => {
+              setActiveTab("projects");
+              const projectsData = await fetchProjects();
+              await fetchStats(projectsData);
+            }}
             className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
               activeTab === "projects"
                 ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
@@ -253,7 +261,10 @@ export const ManagerDashboard = () => {
             My Projects
           </button>
           <button
-            onClick={() => setActiveTab("teams")}
+            onClick={() => {
+              setActiveTab("teams");
+              fetchTeams();
+            }}
             className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
               activeTab === "teams"
                 ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"

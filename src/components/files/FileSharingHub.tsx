@@ -411,7 +411,10 @@ export const FileSharingHub = () => {
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-6">
           <button
-            onClick={() => setActiveTab("shared-with-me")}
+            onClick={() => {
+              setActiveTab("shared-with-me");
+              fetchAllData();
+            }}
             className={`px-4 py-2 rounded-lg transition-all ${
               activeTab === "shared-with-me"
                 ? "glass border border-white/20"
@@ -423,7 +426,10 @@ export const FileSharingHub = () => {
           </button>
 
           <button
-            onClick={() => setActiveTab("shared-by-me")}
+            onClick={() => {
+              setActiveTab("shared-by-me");
+              fetchAllData();
+            }}
             className={`px-4 py-2 rounded-lg transition-all ${
               activeTab === "shared-by-me"
                 ? "glass border border-white/20"
@@ -435,7 +441,10 @@ export const FileSharingHub = () => {
           </button>
 
           <button
-            onClick={() => setActiveTab("my-files")}
+            onClick={() => {
+              setActiveTab("my-files");
+              fetchAllData();
+            }}
             className={`px-4 py-2 rounded-lg transition-all ${
               activeTab === "my-files"
                 ? "glass border border-white/20"

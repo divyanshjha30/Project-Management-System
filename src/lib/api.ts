@@ -8,9 +8,11 @@ console.log("🔗 API Base URL:", API_BASE_URL);
 
 export interface User {
   user_id: string;
+  id?: string; // Backend sometimes returns 'id' instead of 'user_id'
   username: string;
   email: string;
   role: "ADMIN" | "MANAGER" | "DEVELOPER";
+  email_verified?: boolean;
 }
 
 export interface LoginResponse {
