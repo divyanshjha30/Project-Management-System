@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import {
   Calendar as CalendarIcon,
@@ -9,8 +10,10 @@ import {
   Edit,
   Trash2,
   X,
+  Eye,
+  ExternalLink,
 } from "lucide-react";
-import { apiClient } from "../../lib/api";
+import { apiClient, Task } from "../../lib/api";
 import { useAuth } from "../../contexts/AuthContext";
 import "react-calendar/dist/Calendar.css";
 
@@ -46,6 +49,7 @@ interface User {
 
 export const CalendarView = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -54,6 +58,10 @@ export const CalendarView = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [userSearch, setUserSearch] = useState("");
+  const [showEventDetailsModal, setShowEventDetailsModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showFilteredEventsModal, setShowFilteredEventsModal] = useState(false);
+  const [eventTypeFilter, setEventTypeFilter] = useState<string | null>(null);
   const [newMeeting, setNewMeeting] = useState<Meeting>({
     title: "",
     description: "",
@@ -198,6 +206,28 @@ export const CalendarView = () => {
     }
   };
 
+  const handleEventClick = (event: Event) => {
+    setSelectedEvent(event);
+    setShowEventDetailsModal(true);
+  };
+
+  const handleViewTask = async (taskId: string, projectId?: string) => {
+    // Navigate to the project's task manager if we have a project_id
+    if (projectId) {
+      navigate(`/projects/${projectId}`);
+    }
+  };
+
+  const handleFilterByType = (type: string) => {
+    setEventTypeFilter(type);
+    setShowFilteredEventsModal(true);
+  };
+
+  const getFilteredEvents = () => {
+    if (!eventTypeFilter) return events;
+    return events.filter((event) => event.type === eventTypeFilter);
+  };
+
   const selectedDateEvents = getEventsForDate(selectedDate);
 
   const getEventTypeColor = (type: string) => {
@@ -283,7 +313,8 @@ export const CalendarView = () => {
                 {selectedDateEvents.map((event) => (
                   <div
                     key={event.id}
-                    className="glass-soft p-4 rounded-lg space-y-2"
+                    onClick={() => handleEventClick(event)}
+                    className="glass-soft p-4 rounded-lg space-y-2 cursor-pointer hover:bg-white/10 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -353,13 +384,21 @@ export const CalendarView = () => {
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="card p-4 text-center">
+            <div
+              onClick={() => handleFilterByType("meeting")}
+              className="card p-4 text-center cursor-pointer hover:bg-white/5 transition-colors"
+              title="Click to view all meetings"
+            >
               <div className="text-2xl font-bold text-blue-500">
                 {events.filter((e) => e.type === "meeting").length}
               </div>
               <div className="text-xs opacity-70">Meetings</div>
             </div>
-            <div className="card p-4 text-center">
+            <div
+              onClick={() => handleFilterByType("task_due")}
+              className="card p-4 text-center cursor-pointer hover:bg-white/5 transition-colors"
+              title="Click to view all due tasks"
+            >
               <div className="text-2xl font-bold text-red-500">
                 {events.filter((e) => e.type === "task_due").length}
               </div>
@@ -368,6 +407,166 @@ export const CalendarView = () => {
           </div>
         </div>
       </div>
+
+      {/* Filtered Events Modal */}
+      {showFilteredEventsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              setShowFilteredEventsModal(false);
+              setEventTypeFilter(null);
+            }}
+          />
+          <div className="relative card p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden animate-scale-in flex flex-col">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold">
+                {eventTypeFilter === "meeting"
+                  ? "All Meetings"
+                  : "All Due Tasks"}{" "}
+                <span className="text-sm opacity-70">
+                  ({getFilteredEvents().length})
+                </span>
+              </h3>
+              <button
+                onClick={() => {
+                  setShowFilteredEventsModal(false);
+                  setEventTypeFilter(null);
+                }}
+                className="p-1 hover:bg-white/10 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3">
+              {getFilteredEvents().length > 0 ? (
+                getFilteredEvents()
+                  .sort(
+                    (a, b) =>
+                      new Date(a.date + " " + a.time).getTime() -
+                      new Date(b.date + " " + b.time).getTime()
+                  )
+                  .map((event) => (
+                    <div
+                      key={event.id}
+                      onClick={() => {
+                        setShowFilteredEventsModal(false);
+                        setEventTypeFilter(null);
+                        handleEventClick(event);
+                      }}
+                      className="glass-soft p-4 rounded-lg space-y-2 cursor-pointer hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium">{event.title}</h4>
+                          {event.description && (
+                            <p className="text-sm opacity-70 mt-1">
+                              {event.description}
+                            </p>
+                          )}
+                        </div>
+                        {event.created_by === user?.user_id &&
+                          event.type === "meeting" && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditEvent(event);
+                                  setShowFilteredEventsModal(false);
+                                  setEventTypeFilter(null);
+                                }}
+                                className="p-1 hover:bg-white/10 rounded"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteEvent(event.id);
+                                }}
+                                className="p-1 hover:bg-white/10 rounded text-red-400"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                      </div>
+
+                      <div className="flex items-center gap-4 text-xs">
+                        <div className="flex items-center gap-1">
+                          <CalendarIcon className="w-3 h-3" />
+                          {new Date(event.date).toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {event.time}
+                        </div>
+                        <span
+                          className={`px-2 py-1 rounded border text-xs ${getEventTypeColor(
+                            event.type
+                          )}`}
+                        >
+                          {formatEventType(event.type)}
+                        </span>
+                      </div>
+
+                      {event.location && (
+                        <div className="flex items-center gap-1 text-xs opacity-70">
+                          <MapPin className="w-3 h-3" />
+                          {event.location}
+                        </div>
+                      )}
+
+                      {event.attendees && event.attendees.length > 0 && (
+                        <div className="flex items-center gap-1 text-xs opacity-70">
+                          <Users className="w-3 h-3" />
+                          {event.attendees.length} attendees
+                        </div>
+                      )}
+
+                      {event.type === "task_due" && event.project_id && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewTask(event.task_id!, event.project_id);
+                            setShowFilteredEventsModal(false);
+                            setEventTypeFilter(null);
+                          }}
+                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-2"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          View Task in Project
+                        </button>
+                      )}
+                    </div>
+                  ))
+              ) : (
+                <div className="text-center py-12 opacity-50">
+                  <CalendarIcon className="w-12 h-12 mx-auto mb-2" />
+                  <p>
+                    No{" "}
+                    {eventTypeFilter === "meeting" ? "meetings" : "due tasks"}{" "}
+                    found
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-white/10">
+              <button
+                onClick={() => {
+                  setShowFilteredEventsModal(false);
+                  setEventTypeFilter(null);
+                }}
+                className="btn-ghost w-full"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Meeting Modal */}
       {showMeetingModal && (
@@ -524,6 +723,128 @@ export const CalendarView = () => {
                 className="btn-primary flex-1"
               >
                 Schedule Meeting
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Event Details Modal */}
+      {showEventDetailsModal && selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              setShowEventDetailsModal(false);
+              setSelectedEvent(null);
+            }}
+          />
+          <div className="relative card p-6 w-full max-w-lg animate-scale-in">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold">Event Details</h3>
+              <button
+                onClick={() => {
+                  setShowEventDetailsModal(false);
+                  setSelectedEvent(null);
+                }}
+                className="p-1 hover:bg-white/10 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xl font-bold mb-2">
+                  {selectedEvent.title}
+                </h4>
+                {selectedEvent.description && (
+                  <p className="text-sm opacity-70">
+                    {selectedEvent.description}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="w-4 h-4" />
+                  <span>
+                    {new Date(selectedEvent.date).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span>{selectedEvent.time}</span>
+                </div>
+              </div>
+
+              <div>
+                <span
+                  className={`px-3 py-1 rounded border text-sm inline-block ${getEventTypeColor(
+                    selectedEvent.type
+                  )}`}
+                >
+                  {formatEventType(selectedEvent.type)}
+                </span>
+              </div>
+
+              {selectedEvent.location && (
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="w-4 h-4" />
+                  <span>{selectedEvent.location}</span>
+                </div>
+              )}
+
+              {selectedEvent.attendees &&
+                selectedEvent.attendees.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 text-sm mb-2">
+                      <Users className="w-4 h-4" />
+                      <span>{selectedEvent.attendees.length} attendees</span>
+                    </div>
+                  </div>
+                )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              {selectedEvent.type === "task_due" && selectedEvent.task_id && (
+                <button
+                  onClick={() => {
+                    handleViewTask(
+                      selectedEvent.task_id!,
+                      selectedEvent.project_id
+                    );
+                    setShowEventDetailsModal(false);
+                    setSelectedEvent(null);
+                  }}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  View Task
+                </button>
+              )}
+              {selectedEvent.created_by === user?.user_id &&
+                selectedEvent.type === "meeting" && (
+                  <button
+                    onClick={() => {
+                      handleEditEvent(selectedEvent);
+                      setShowEventDetailsModal(false);
+                      setSelectedEvent(null);
+                    }}
+                    className="btn-ghost flex-1"
+                  >
+                    <Edit className="w-4 h-4 inline mr-2" />
+                    Edit
+                  </button>
+                )}
+              <button
+                onClick={() => {
+                  setShowEventDetailsModal(false);
+                  setSelectedEvent(null);
+                }}
+                className="btn-ghost flex-1"
+              >
+                Close
               </button>
             </div>
           </div>

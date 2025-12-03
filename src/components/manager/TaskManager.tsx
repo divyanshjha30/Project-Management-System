@@ -868,6 +868,16 @@ export const TaskManager = ({
             {tasksForDay.map((task) => (
               <div
                 key={task.task_id}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    const freshTask = await apiClient.getTask(task.task_id);
+                    setSelectedTask(freshTask);
+                  } catch (error) {
+                    console.error("Error fetching task:", error);
+                    setSelectedTask(task);
+                  }
+                }}
                 className={`text-xs p-1.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
                   task.status === "COMPLETED"
                     ? "bg-green-500/20 text-green-400"
