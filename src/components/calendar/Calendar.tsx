@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "../../lib/api";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserAvatar } from "../profile/UserAvatar";
 import "react-calendar/dist/Calendar.css";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -46,6 +47,7 @@ interface User {
   user_id: string;
   username: string;
   email: string;
+  profile_photo_url?: string;
 }
 
 export const CalendarView = () => {
@@ -798,7 +800,12 @@ export const CalendarView = () => {
                           key={attendee.user_id}
                           className="glass-soft px-3 py-1.5 rounded-lg text-sm flex items-center gap-2"
                         >
-                          <span>{attendee.username}</span>
+                          <UserAvatar
+                            userId={attendee.user_id}
+                            username={attendee.username}
+                            profilePhotoUrl={attendee.profile_photo_url}
+                            size="xs"
+                          />
                           <button
                             onClick={() => {
                               setNewMeeting((prev) => ({
@@ -848,9 +855,12 @@ export const CalendarView = () => {
                             }}
                             className="w-4 h-4 rounded border-white/20"
                           />
-                          <div className="neo-icon w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0 text-xs">
-                            {user.username.charAt(0).toUpperCase()}
-                          </div>
+                          <UserAvatar
+                            userId={user.user_id}
+                            username={user.username}
+                            profilePhotoUrl={user.profile_photo_url}
+                            size="sm"
+                          />
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm">
                               {user.username}
@@ -1266,7 +1276,12 @@ export const CalendarView = () => {
                           key={attendee.user_id}
                           className="glass-soft px-3 py-1.5 rounded-lg text-sm flex items-center gap-2"
                         >
-                          <span>{attendee.username}</span>
+                          <UserAvatar
+                            userId={attendee.user_id}
+                            username={attendee.username}
+                            profilePhotoUrl={attendee.profile_photo_url}
+                            size="xs"
+                          />
                           <button
                             onClick={() => {
                               setNewMeeting((prev) => ({
@@ -1316,9 +1331,12 @@ export const CalendarView = () => {
                             }}
                             className="w-4 h-4 rounded border-white/20"
                           />
-                          <div className="neo-icon w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0 text-xs">
-                            {user.username.charAt(0).toUpperCase()}
-                          </div>
+                          <UserAvatar
+                            userId={user.user_id}
+                            username={user.username}
+                            profilePhotoUrl={user.profile_photo_url}
+                            size="sm"
+                          />
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm">
                               {user.username}

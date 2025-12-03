@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "../../lib/api";
+import { UserAvatar } from "../profile/UserAvatar";
 import { X, Users, Loader } from "lucide-react";
 
 interface TeamFormProps {
@@ -12,6 +13,7 @@ interface User {
   username: string;
   email: string;
   role: string;
+  profile_photo_url?: string;
 }
 
 export const TeamForm = ({ onClose, onSuccess }: TeamFormProps) => {
@@ -177,8 +179,13 @@ export const TeamForm = ({ onClose, onSuccess }: TeamFormProps) => {
                       onChange={() => toggleMember(user.user_id)}
                       className="w-4 h-4 rounded border-white/20"
                     />
+                    <UserAvatar
+                      userId={user.user_id}
+                      username={user.username}
+                      profilePhotoUrl={user.profile_photo_url}
+                      size="sm"
+                    />
                     <div className="flex-1">
-                      <div className="font-medium">{user.username}</div>
                       <div className="text-xs opacity-70">{user.email}</div>
                     </div>
                     <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300">

@@ -9,6 +9,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { apiClient } from "../../lib/api";
+import { UserAvatar } from "../profile/UserAvatar";
 
 interface TeamMember {
   team_member_id: string;
@@ -18,6 +19,7 @@ interface TeamMember {
     username: string;
     email: string;
     role: string;
+    profile_photo_url?: string;
   };
 }
 
@@ -31,6 +33,7 @@ interface Team {
     user_id: string;
     username: string;
     email: string;
+    profile_photo_url?: string;
   };
   team_members: TeamMember[];
 }
@@ -192,9 +195,15 @@ export const TeamList = ({ teams, onRefresh }: TeamListProps) => {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">{team.team_name}</h3>
-                    <p className="text-sm opacity-70">
-                      Manager: {team.manager.username}
-                    </p>
+                    <div className="text-sm opacity-70 flex items-center gap-2 mt-1">
+                      <span>Manager:</span>
+                      <UserAvatar
+                        userId={team.manager.user_id}
+                        username={team.manager.username}
+                        profilePhotoUrl={team.manager.profile_photo_url}
+                        size="xs"
+                      />
+                    </div>
                   </div>
                 </div>
                 {team.description && (
@@ -316,13 +325,13 @@ export const TeamList = ({ teams, onRefresh }: TeamListProps) => {
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-sm font-semibold">
-                        {member.user.username[0].toUpperCase()}
-                      </div>
+                      <UserAvatar
+                        userId={member.user.user_id}
+                        username={member.user.username}
+                        profilePhotoUrl={member.user.profile_photo_url}
+                        size="sm"
+                      />
                       <div>
-                        <div className="font-medium">
-                          {member.user.username}
-                        </div>
                         <div className="text-xs opacity-70">
                           {member.user.email}
                         </div>

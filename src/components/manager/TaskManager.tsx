@@ -160,11 +160,17 @@ const ProjectMemberManagement = ({ project }: { project: Project }) => {
   const canManageMembers = user?.role === "ADMIN" || user?.role === "MANAGER";
 
   useEffect(() => {
-    fetchAllDevelopers();
     fetchProjectMembers();
+    // Only fetch all developers if user can manage members
+    if (canManageMembers) {
+      fetchAllDevelopers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAllDevelopers = async () => {
+    if (!canManageMembers) return; // Don't fetch if user cannot manage
+
     try {
       const response = await apiClient.getUsersByRole("DEVELOPER");
       setAllDevelopers(response.users || []);
@@ -500,6 +506,7 @@ export const TaskManager = ({
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [showEditProject, setShowEditProject] = useState(false);
   const [fileRefreshKey, setFileRefreshKey] = useState(0);
+  const [projectManager, setProjectManager] = useState<any>(null);
 
   const fetchTasks = async () => {
     try {
@@ -513,8 +520,22 @@ export const TaskManager = ({
     }
   };
 
+  const fetchProjectManager = async () => {
+    if (project.owner_manager_id) {
+      try {
+        const response = await apiClient.get(
+          `/profile/${project.owner_manager_id}`
+        );
+        setProjectManager(response.profile);
+      } catch (error) {
+        console.error("Error fetching project manager:", error);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchTasks();
+    fetchProjectManager();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.project_id]);
 
@@ -1017,6 +1038,18 @@ export const TaskManager = ({
             <div>
               <h1 className="text-2xl font-bold">{project.project_name}</h1>
               <p className="text-sm opacity-70 mt-1">{project.description}</p>
+              {projectManager && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs opacity-60">Project Manager:</span>
+                  <UserAvatar
+                    userId={projectManager.user_id}
+                    username={projectManager.username}
+                    profilePhotoUrl={projectManager.profile_photo_url}
+                    size="xs"
+                    showName={true}
+                  />
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">

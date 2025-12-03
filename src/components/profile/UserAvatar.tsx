@@ -5,7 +5,7 @@ interface UserAvatarProps {
   userId: string;
   username: string;
   profilePhotoUrl?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   showName?: boolean;
   showPopover?: boolean;
 }
@@ -19,15 +19,17 @@ export const UserAvatar = ({
   showPopover = true,
 }: UserAvatarProps) => {
   const sizeClasses = {
-    sm: "w-6 h-6",
-    md: "w-8 h-8",
-    lg: "w-10 h-10",
+    xs: "w-6 h-6 text-xs",
+    sm: "w-8 h-8",
+    md: "w-10 h-10",
+    lg: "w-12 h-12",
   };
 
   const iconSizes = {
-    sm: "w-3 h-3",
-    md: "w-4 h-4",
-    lg: "w-5 h-5",
+    xs: "w-3 h-3",
+    sm: "w-4 h-4",
+    md: "w-5 h-5",
+    lg: "w-6 h-6",
   };
 
   const avatarContent = (

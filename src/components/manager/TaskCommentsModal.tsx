@@ -1,5 +1,20 @@
 import { useState, useEffect } from "react";
-import { Task, Comment, apiClient } from "../../lib/api";
+import { Task, apiClient } from "../../lib/api";
+
+interface Comment {
+  comment_id: string;
+  task_id: string;
+  user_id: string;
+  comment_text: string;
+  created_at: string;
+  user?: {
+    user_id: string;
+    username: string;
+    email: string;
+    role: string;
+    profile_photo_url?: string;
+  };
+}
 import {
   X,
   MessageSquare,
@@ -10,6 +25,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserAvatar } from "../profile/UserAvatar";
 
 interface TaskCommentsModalProps {
   task: Task;
@@ -192,9 +208,12 @@ export const TaskCommentsModal = ({
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-sm">
-                              {comment.user?.username || "Unknown"}
-                            </span>
+                            <UserAvatar
+                              userId={comment.user?.user_id || ""}
+                              username={comment.user?.username || "Unknown"}
+                              profilePhotoUrl={comment.user?.profile_photo_url}
+                              size="xs"
+                            />
                             {isOwnComment && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--brand)]/20 text-[var(--brand)]">
                                 You

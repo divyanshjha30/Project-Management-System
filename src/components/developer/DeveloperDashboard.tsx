@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { apiClient, Task, File, Project } from "../../lib/api";
+import { UserAvatar } from "../profile/UserAvatar";
 import {
   CheckSquare,
   Code,
@@ -823,6 +824,32 @@ export const DeveloperDashboard = () => {
                 </div>
               ) : projectDetails ? (
                 <div className="space-y-6">
+                  {/* Project Manager */}
+                  {(() => {
+                    const manager = projectDetails.members?.find(
+                      (m: any) =>
+                        m.role === "MANAGER" || m.project_role === "LEAD"
+                    );
+                    return manager ? (
+                      <div className="glass rounded-lg p-4">
+                        <h3 className="text-sm font-semibold opacity-70 mb-3">
+                          Project Manager
+                        </h3>
+                        <div className="flex items-center gap-3">
+                          <UserAvatar
+                            userId={manager.user_id}
+                            username={manager.username}
+                            profilePhotoUrl={manager.profile_photo_url}
+                            size="sm"
+                          />
+                          <div className="text-xs opacity-60">
+                            {manager.email}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="glass rounded-lg p-4">
                       <h3 className="text-sm font-semibold opacity-70 mb-2">
@@ -877,14 +904,13 @@ export const DeveloperDashboard = () => {
                           key={member.user_id}
                           className="glass rounded-lg p-4 flex items-center gap-3"
                         >
-                          <div className="neo-icon w-8 h-8 flex items-center justify-center rounded-full">
-                            <User
-                              className="w-4 h-4"
-                              style={{ color: "var(--brand)" }}
-                            />
-                          </div>
+                          <UserAvatar
+                            userId={member.user_id}
+                            username={member.username}
+                            profilePhotoUrl={member.profile_photo_url}
+                            size="sm"
+                          />
                           <div className="flex-1">
-                            <div className="font-medium">{member.username}</div>
                             <div className="text-xs opacity-60">
                               {member.email}
                             </div>

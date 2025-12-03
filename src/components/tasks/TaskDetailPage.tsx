@@ -28,6 +28,12 @@ interface Task {
   actual_hours?: number;
   created_at: string;
   updated_at: string;
+  created_by?: string;
+  creator?: {
+    user_id: string;
+    username: string;
+    profile_photo_url?: string;
+  };
 }
 
 interface Subtask {
@@ -395,6 +401,18 @@ export function TaskDetailPage() {
             </div>
             {task.description && (
               <p className="text-gray-400 mb-4">{task.description}</p>
+            )}
+            {task.creator && (
+              <div className="flex items-center gap-2 text-sm text-gray-400 mt-2">
+                <span>Created by:</span>
+                <UserAvatar
+                  userId={task.creator.user_id}
+                  username={task.creator.username}
+                  profilePhotoUrl={task.creator.profile_photo_url}
+                  size="xs"
+                  showName={true}
+                />
+              </div>
             )}
           </div>
           <button

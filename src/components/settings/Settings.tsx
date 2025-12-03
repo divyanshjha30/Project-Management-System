@@ -14,6 +14,7 @@ import {
 import { ChangePasswordModal } from "./ChangePasswordModal";
 import DeleteAccountModal from "./DeleteAccountModal";
 import { apiClient } from "../../lib/api";
+import { UserAvatar } from "../profile/UserAvatar";
 
 export const Settings = () => {
   const { user, signOut } = useAuth();
@@ -156,19 +157,13 @@ export const Settings = () => {
           <div className="glass-soft rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                  {user?.profile_photo_url ? (
-                    <img
-                      src={user.profile_photo_url}
-                      alt={user.username}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User className="w-6 h-6 text-white" />
-                  )}
-                </div>
+                <UserAvatar
+                  userId={user?.user_id || ""}
+                  username={user?.username || ""}
+                  profilePhotoUrl={user?.profile_photo_url}
+                  size="md"
+                />
                 <div>
-                  <p className="font-medium">{user?.username}</p>
                   <p className="text-sm opacity-70">{user?.email}</p>
                 </div>
               </div>

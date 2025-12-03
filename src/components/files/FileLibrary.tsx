@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiClient, File } from "../../lib/api";
+import { UserAvatar } from "../profile/UserAvatar";
 import {
   File as FileIcon,
   Download,
@@ -335,8 +336,12 @@ export const FileLibrary = ({
                     </span>
                     {file.uploaded_by && (
                       <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {file.uploaded_by.username}
+                        <UserAvatar
+                          userId={file.uploaded_by.user_id}
+                          username={file.uploaded_by.username}
+                          profilePhotoUrl={file.uploaded_by.profile_photo_url}
+                          size="xs"
+                        />
                       </span>
                     )}
                     {file.task && (

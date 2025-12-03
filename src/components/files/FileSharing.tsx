@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiClient, File, FileShare, User, Project } from "../../lib/api";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserAvatar } from "../profile/UserAvatar";
 import {
   Share2,
   Users,
@@ -342,9 +343,12 @@ export const FileSharing = ({
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <div className="text-sm font-medium">
-                              {user.username}
-                            </div>
+                            <UserAvatar
+                              userId={user.user_id}
+                              username={user.username}
+                              profilePhotoUrl={user.profile_photo_url}
+                              size="xs"
+                            />
                             <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">
                               {user.role}
                             </span>

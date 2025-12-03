@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { apiClient, FileShare, File } from "../../lib/api";
+import { UserAvatar } from "../profile/UserAvatar";
 import {
   Share2,
   FileIcon,
@@ -761,10 +762,15 @@ export const FileSharingHub = () => {
                             {activeTab === "shared-with-me" &&
                               share.shared_by && (
                                 <div className="flex items-center gap-1">
-                                  <User className="w-3 h-3" />
-                                  <span>
-                                    Shared by {share.shared_by.username}
-                                  </span>
+                                  <span>Shared by</span>
+                                  <UserAvatar
+                                    userId={share.shared_by.user_id}
+                                    username={share.shared_by.username}
+                                    profilePhotoUrl={
+                                      share.shared_by.profile_photo_url
+                                    }
+                                    size="xs"
+                                  />
                                 </div>
                               )}
 
