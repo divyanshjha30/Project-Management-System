@@ -992,20 +992,19 @@ export const CalendarView = () => {
                   View Task
                 </button>
               )}
-              {selectedEvent.created_by === user?.user_id &&
-                selectedEvent.type === "meeting" && (
-                  <button
-                    onClick={() => {
-                      handleEditEvent(selectedEvent);
-                      setShowEventDetailsModal(false);
-                      setSelectedEvent(null);
-                    }}
-                    className="btn-ghost flex-1"
-                  >
-                    <Edit className="w-4 h-4 inline mr-2" />
-                    Edit
-                  </button>
-                )}
+              {selectedEvent.type === "meeting" && (
+                <button
+                  onClick={() => {
+                    handleEditEvent(selectedEvent);
+                    setShowEventDetailsModal(false);
+                    setSelectedEvent(null);
+                  }}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit Meeting
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowEventDetailsModal(false);
