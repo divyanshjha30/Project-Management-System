@@ -11,10 +11,9 @@ import {
   Edit,
   Trash2,
   X,
-  Eye,
   ExternalLink,
 } from "lucide-react";
-import { apiClient, Task } from "../../lib/api";
+import { apiClient } from "../../lib/api";
 import { useAuth } from "../../contexts/AuthContext";
 import "react-calendar/dist/Calendar.css";
 import "react-datepicker/dist/react-datepicker.css";
@@ -213,7 +212,7 @@ export const CalendarView = () => {
     setShowEventDetailsModal(true);
   };
 
-  const handleViewTask = async (taskId: string, projectId?: string) => {
+  const handleViewTask = async (projectId?: string) => {
     // Navigate to the project's task manager if we have a project_id
     if (projectId) {
       navigate(`/projects/${projectId}`);
@@ -531,7 +530,7 @@ export const CalendarView = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleViewTask(event.task_id!, event.project_id);
+                            handleViewTask(event.project_id);
                             setShowFilteredEventsModal(false);
                             setEventTypeFilter(null);
                           }}
@@ -983,10 +982,7 @@ export const CalendarView = () => {
               {selectedEvent.type === "task_due" && selectedEvent.task_id && (
                 <button
                   onClick={() => {
-                    handleViewTask(
-                      selectedEvent.task_id!,
-                      selectedEvent.project_id
-                    );
+                    handleViewTask(selectedEvent.project_id);
                     setShowEventDetailsModal(false);
                     setSelectedEvent(null);
                   }}
