@@ -12,6 +12,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { ChangePasswordModal } from "./ChangePasswordModal";
+import DeleteAccountModal from "./DeleteAccountModal";
 import { apiClient } from "../../lib/api";
 
 export const Settings = () => {
@@ -19,12 +20,12 @@ export const Settings = () => {
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   // Notification preferences
   const [inAppNotifications, setInAppNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [savingPreferences, setSavingPreferences] = useState(false);
-  const [loadingPreferences, setLoadingPreferences] = useState(true);
   const [preferenceMessage, setPreferenceMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -34,7 +35,6 @@ export const Settings = () => {
   useEffect(() => {
     const loadPreferences = async () => {
       try {
-        setLoadingPreferences(true);
         const response = await apiClient.get("/profile/preferences");
 
         if (response.preferences) {
@@ -54,8 +54,6 @@ export const Settings = () => {
       } catch (error: any) {
         console.error("Error loading preferences:", error);
         // Keep defaults if loading fails
-      } finally {
-        setLoadingPreferences(false);
       }
     };
 
@@ -310,25 +308,54 @@ export const Settings = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="w-full glass-soft rounded-lg p-4 flex items-center justify-between hover:bg-red-500/10 transition-all border border-red-500/20"
-        >
-          <div className="flex items-center gap-3">
-            <LogOut className="w-5 h-5 text-red-400" />
-            <div className="text-left">
-              <p className="font-medium text-red-400">Sign Out</p>
-              <p className="text-sm opacity-70">Sign out from your account</p>
+        <div className="space-y-3">
+          <button
+            onClick={() => setShowDeleteAccountModal(true)}
+            className="w-full glass-soft rounded-lg p-4 flex items-center justify-between hover:bg-red-500/10 transition-all border border-red-500/20"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400" />
+              <div className="text-left">
+                <p className="font-medium text-red-400">Delete Account</p>
+                <p className="text-sm opacity-70">
+                  Permanently delete your account and all data
+                </p>
+              </div>
             </div>
-          </div>
-          <span className="text-red-400">›</span>
-        </button>
+            <span className="text-red-400">›</span>
+          </button>
+
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="w-full glass-soft rounded-lg p-4 flex items-center justify-between hover:bg-red-500/10 transition-all border border-red-500/20"
+          >
+            <div className="flex items-center gap-3">
+              <LogOut className="w-5 h-5 text-red-400" />
+              <div className="text-left">
+                <p className="font-medium text-red-400">Sign Out</p>
+                <p className="text-sm opacity-70">Sign out from your account</p>
+              </div>
+            </div>
+            <span className="text-red-400">›</span>
+          </button>
+        </div>
       </div>
 
       {/* Change Password Modal */}
       <ChangePasswordModal
         isOpen={showChangePasswordModal}
         onClose={() => setShowChangePasswordModal(false)}
+      />
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteAccountModal}
+        onClose={() => setShowDeleteAccountModal(false)}
+        onSuccess={() => {
+          // Account deleted successfully - sign out and redirect
+          signOut();
+          navigate("/");
+        }}
       />
 
       {/* Logout Confirmation Modal */}
