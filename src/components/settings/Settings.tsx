@@ -10,11 +10,13 @@ import {
   Mail,
   AlertCircle,
 } from "lucide-react";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 
 export const Settings = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   const handleSignOut = () => {
     try {
@@ -107,7 +109,7 @@ export const Settings = () => {
           </button>
 
           <button
-            onClick={() => navigate("/profile")}
+            onClick={() => setShowChangePasswordModal(true)}
             className="w-full glass-soft rounded-lg p-4 flex items-center justify-between hover:glass transition-all"
           >
             <div className="flex items-center gap-3">
@@ -193,6 +195,12 @@ export const Settings = () => {
           <span className="text-red-400">›</span>
         </button>
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+      />
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
