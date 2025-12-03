@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { apiClient } from "../../lib/api";
 import {
   BarChart,
@@ -28,7 +28,13 @@ import {
   AlertTriangle,
   Award,
   Calendar,
+  Download,
+  FileText,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
+import * as XLSX from "xlsx";
 
 interface AnalyticsData {
   overview: {
@@ -121,6 +127,13 @@ export default function ManagerAnalytics() {
   const [timeRange, setTimeRange] = useState("30");
   const [selectedProject, setSelectedProject] = useState("");
   const [projects, setProjects] = useState<any[]>([]);
+  const [exporting, setExporting] = useState(false);
+
+  // Refs for chart containers
+  const velocityChartRef = useRef<HTMLDivElement>(null);
+  const statusChartRef = useRef<HTMLDivElement>(null);
+  const teamChartRef = useRef<HTMLDivElement>(null);
+  const workTypeChartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -154,6 +167,513 @@ export default function ManagerAnalytics() {
       setError(err.message || "Failed to load analytics");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportToPDF = async () => {
+    if (!analytics) return;
+
+    setExporting(true);
+    try {
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let yPosition = 20;
+
+      // Title
+      pdf.setFontSize(20);
+      pdf.setTextColor(59, 130, 246);
+      pdf.text("Manager Analytics Report", pageWidth / 2, yPosition, {
+        align: "center",
+      });
+
+      yPosition += 10;
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(
+        `Generated: ${new Date().toLocaleDateString()}`,
+        pageWidth / 2,
+        yPosition,
+        { align: "center" }
+      );
+      pdf.text(
+        `Time Range: Last ${timeRange} days`,
+        pageWidth / 2,
+        yPosition + 5,
+        { align: "center" }
+      );
+
+      yPosition += 15;
+
+      // Overview Section
+      pdf.setFontSize(14);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text("Overview", 14, yPosition);
+      yPosition += 7;
+
+      const overviewData = [
+        ["Total Projects", analytics.overview.totalProjects.toString()],
+        ["Total Tasks", analytics.overview.totalTasks.toString()],
+        ["Completed Tasks", analytics.overview.completedTasks.toString()],
+        ["In Progress", analytics.overview.inProgressTasks.toString()],
+        ["Completion Rate", `${analytics.overview.completionRate.toFixed(1)}%`],
+        ["Project Members", analytics.overview.totalTeamMembers.toString()],
+      ];
+
+      autoTable(pdf, {
+        startY: yPosition,
+        head: [["Metric", "Value"]],
+        body: overviewData,
+        theme: "grid",
+        headStyles: { fillColor: [59, 130, 246] },
+        margin: { left: 14, right: 14 },
+      });
+
+      yPosition = (pdf as any).lastAutoTable.finalY + 10;
+
+      // KPIs Section
+      if (yPosition > pageHeight - 40) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+
+      pdf.setFontSize(14);
+      pdf.text("Key Performance Indicators", 14, yPosition);
+      yPosition += 7;
+
+      const kpiData = [
+        [
+          "Sprint Velocity",
+          `${analytics.velocity.tasksPerWeek.toFixed(1)} tasks/week`,
+        ],
+        ["Estimation Accuracy", `${analytics.estimation.accuracy.toFixed(1)}%`],
+        ["Burn Rate", `${analytics.burnRate.percentage.toFixed(1)}%`],
+      ];
+
+      autoTable(pdf, {
+        startY: yPosition,
+        head: [["KPI", "Value"]],
+        body: kpiData,
+        theme: "grid",
+        headStyles: { fillColor: [139, 92, 246] },
+        margin: { left: 14, right: 14 },
+      });
+
+      yPosition = (pdf as any).lastAutoTable.finalY + 10;
+
+      // Capture charts as images
+      const captureChart = async (
+        ref: React.RefObject<HTMLDivElement>,
+        title: string
+      ) => {
+        if (!ref.current) return null;
+        const canvas = await html2canvas(ref.current, {
+          backgroundColor: "#171717",
+          scale: 2,
+        });
+        return { canvas, title };
+      };
+
+      const charts = await Promise.all([
+        captureChart(velocityChartRef, "Velocity Trend"),
+        captureChart(statusChartRef, "Task Status Distribution"),
+        captureChart(teamChartRef, "Team Performance"),
+        captureChart(workTypeChartRef, "Work Type Distribution"),
+      ]);
+
+      // Add charts to PDF
+      for (const chart of charts) {
+        if (!chart || !chart.canvas) continue;
+
+        if (yPosition > pageHeight - 100) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+
+        pdf.setFontSize(12);
+        pdf.text(chart.title, 14, yPosition);
+        yPosition += 5;
+
+        const imgData = chart.canvas.toDataURL("image/png");
+        const imgWidth = pageWidth - 28;
+        const imgHeight = (chart.canvas.height * imgWidth) / chart.canvas.width;
+
+        pdf.addImage(imgData, "PNG", 14, yPosition, imgWidth, imgHeight);
+        yPosition += imgHeight + 10;
+      }
+
+      // Velocity Trend Table
+      if (analytics.velocity.trend && analytics.velocity.trend.length > 0) {
+        if (yPosition > pageHeight - 60) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+
+        pdf.setFontSize(14);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text("Velocity Trend Data", 14, yPosition);
+        yPosition += 7;
+
+        const velocityData = analytics.velocity.trend.map((item) => [
+          new Date(item.week).toLocaleDateString(),
+          item.tasksCompleted.toString(),
+        ]);
+
+        autoTable(pdf, {
+          startY: yPosition,
+          head: [["Week", "Tasks Completed"]],
+          body: velocityData,
+          theme: "grid",
+          headStyles: { fillColor: [59, 130, 246] },
+          margin: { left: 14, right: 14 },
+        });
+
+        yPosition = (pdf as any).lastAutoTable.finalY + 10;
+      }
+
+      // Team Performance Table
+      if (analytics.teamPerformance && analytics.teamPerformance.length > 0) {
+        if (yPosition > pageHeight - 60) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+
+        pdf.setFontSize(14);
+        pdf.text("Team Performance Details", 14, yPosition);
+        yPosition += 7;
+
+        const teamData = analytics.teamPerformance.map((member) => [
+          member.username || "Unknown",
+          member.tasksCompleted.toString(),
+          `${member.hoursLogged.toFixed(1)}h`,
+          `${member.efficiency.toFixed(1)}%`,
+        ]);
+
+        autoTable(pdf, {
+          startY: yPosition,
+          head: [["Member", "Tasks", "Hours", "Efficiency"]],
+          body: teamData,
+          theme: "grid",
+          headStyles: { fillColor: [16, 185, 129] },
+          margin: { left: 14, right: 14 },
+        });
+
+        yPosition = (pdf as any).lastAutoTable.finalY + 10;
+      }
+
+      // Project Health Table
+      if (analytics.projectHealth && analytics.projectHealth.length > 0) {
+        if (yPosition > pageHeight - 60) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+
+        pdf.setFontSize(14);
+        pdf.text("Project Health", 14, yPosition);
+        yPosition += 7;
+
+        const projectData = analytics.projectHealth.map((project) => [
+          project.projectName,
+          `${project.completionPercentage.toFixed(1)}%`,
+          project.healthScore.toFixed(1),
+          project.status,
+        ]);
+
+        autoTable(pdf, {
+          startY: yPosition,
+          head: [["Project", "Completion", "Health Score", "Status"]],
+          body: projectData,
+          theme: "grid",
+          headStyles: { fillColor: [245, 158, 11] },
+          margin: { left: 14, right: 14 },
+        });
+
+        yPosition = (pdf as any).lastAutoTable.finalY + 10;
+      }
+
+      // Work Type Distribution Table
+      if (
+        analytics.workTypeDistribution &&
+        analytics.workTypeDistribution.length > 0
+      ) {
+        if (yPosition > pageHeight - 60) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+
+        pdf.setFontSize(14);
+        pdf.text("Work Type Distribution", 14, yPosition);
+        yPosition += 7;
+
+        const workTypeData = analytics.workTypeDistribution.map((item) => [
+          item.workType.replace(/_/g, " "),
+          `${item.hours.toFixed(1)}h`,
+        ]);
+
+        autoTable(pdf, {
+          startY: yPosition,
+          head: [["Work Type", "Hours"]],
+          body: workTypeData,
+          theme: "grid",
+          headStyles: { fillColor: [139, 92, 246] },
+          margin: { left: 14, right: 14 },
+        });
+
+        yPosition = (pdf as any).lastAutoTable.finalY + 10;
+      }
+
+      // Task Status Distribution Table
+      const statusData = [
+        ["Completed", analytics.overview.completedTasks.toString()],
+        ["In Progress", analytics.overview.inProgressTasks.toString()],
+        ["To Do", analytics.overview.todoTasks.toString()],
+      ];
+
+      if (yPosition > pageHeight - 60) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+
+      pdf.setFontSize(14);
+      pdf.text("Task Status Distribution", 14, yPosition);
+      yPosition += 7;
+
+      autoTable(pdf, {
+        startY: yPosition,
+        head: [["Status", "Count"]],
+        body: statusData,
+        theme: "grid",
+        headStyles: { fillColor: [16, 185, 129] },
+        margin: { left: 14, right: 14 },
+      });
+
+      // Save PDF
+      pdf.save(
+        `analytics-report-${new Date().toISOString().split("T")[0]}.pdf`
+      );
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportToExcel = () => {
+    if (!analytics) return;
+
+    try {
+      const wb = XLSX.utils.book_new();
+      const data: any[] = [];
+      let currentRow = 0;
+
+      // Title
+      data.push(["PROJECT ANALYTICS DASHBOARD REPORT"]);
+      data.push([`Generated: ${new Date().toLocaleString()}`]);
+      data.push([""]);
+      currentRow = 3;
+
+      // === OVERVIEW SECTION ===
+      data.push(["📊 OVERVIEW METRICS"]);
+      data.push([""]);
+      data.push(["Metric", "Value"]);
+      data.push(["Total Projects", analytics.overview.totalProjects]);
+      data.push(["Total Tasks", analytics.overview.totalTasks]);
+      data.push(["Completed Tasks", analytics.overview.completedTasks]);
+      data.push(["In Progress Tasks", analytics.overview.inProgressTasks]);
+      data.push(["To Do Tasks", analytics.overview.todoTasks]);
+      data.push([
+        "Completion Rate",
+        `${analytics.overview.completionRate.toFixed(1)}%`,
+      ]);
+      data.push(["Team Members", analytics.overview.totalTeamMembers]);
+      data.push([""]);
+
+      // === KPI SECTION ===
+      data.push(["🎯 KEY PERFORMANCE INDICATORS"]);
+      data.push([""]);
+      data.push(["KPI", "Value", "Details"]);
+      data.push([
+        "Sprint Velocity",
+        `${analytics.velocity.tasksPerWeek.toFixed(1)} tasks/week`,
+        `Total Weeks: ${analytics.velocity.totalWeeks}`,
+      ]);
+      data.push([
+        "Estimation Accuracy",
+        `${analytics.estimation.accuracy.toFixed(1)}%`,
+        `${analytics.estimation.tasksWithEstimates} tasks with estimates`,
+      ]);
+      data.push([
+        "Burn Rate",
+        `${analytics.burnRate.percentage.toFixed(1)}%`,
+        `${analytics.burnRate.hoursConsumed}h / ${analytics.burnRate.hoursEstimated}h`,
+      ]);
+      data.push([""]);
+
+      // === VELOCITY TREND ===
+      if (analytics.velocity.trend && analytics.velocity.trend.length > 0) {
+        data.push(["📈 VELOCITY TREND (Tasks Per Week)"]);
+        data.push([""]);
+        data.push(["Week", "Tasks Completed"]);
+        analytics.velocity.trend.forEach((item) => {
+          data.push([item.week, item.tasksCompleted]);
+        });
+        data.push([""]);
+      }
+
+      // === TEAM PERFORMANCE ===
+      if (analytics.teamPerformance && analytics.teamPerformance.length > 0) {
+        data.push(["👥 TEAM PERFORMANCE"]);
+        data.push([""]);
+        data.push([
+          "Member",
+          "Tasks Completed",
+          "Hours Logged",
+          "Avg Hours/Task",
+          "Efficiency %",
+        ]);
+        analytics.teamPerformance.forEach((member) => {
+          data.push([
+            member.username || "Unknown",
+            member.tasksCompleted,
+            typeof member.hoursLogged === "number"
+              ? member.hoursLogged.toFixed(1)
+              : parseFloat(member.hoursLogged || "0").toFixed(1),
+            member.avgHoursPerTask || "0",
+            typeof member.efficiency === "number"
+              ? member.efficiency.toFixed(1)
+              : parseFloat(member.efficiency || "0").toFixed(1),
+          ]);
+        });
+        data.push([""]);
+      }
+
+      // === PROJECT HEALTH ===
+      if (analytics.projectHealth && analytics.projectHealth.length > 0) {
+        data.push(["🏥 PROJECT HEALTH STATUS"]);
+        data.push([""]);
+        data.push([
+          "Project",
+          "Total Tasks",
+          "Completed",
+          "Completion %",
+          "Burn Rate %",
+          "Health Score",
+          "Status",
+        ]);
+        analytics.projectHealth.forEach((project) => {
+          data.push([
+            project.projectName,
+            project.totalTasks,
+            project.completedTasks,
+            typeof project.completionPercentage === "number"
+              ? project.completionPercentage.toFixed(1)
+              : parseFloat(project.completionRate || "0").toFixed(1),
+            project.burnRate,
+            typeof project.healthScore === "number"
+              ? project.healthScore.toFixed(1)
+              : parseFloat(project.healthScore || "0").toFixed(1),
+            project.status,
+          ]);
+        });
+        data.push([""]);
+      }
+
+      // === TASK STATUS DISTRIBUTION ===
+      if (analytics.distribution) {
+        data.push(["📋 TASK STATUS DISTRIBUTION"]);
+        data.push([""]);
+        data.push(["Status", "Count"]);
+        data.push([
+          "Completed",
+          analytics.distribution.byStatus.COMPLETED || 0,
+        ]);
+        data.push([
+          "In Progress",
+          analytics.distribution.byStatus.IN_PROGRESS || 0,
+        ]);
+        data.push(["To Do", analytics.distribution.byStatus.TODO || 0]);
+        data.push([
+          "Cancelled",
+          analytics.distribution.byStatus.CANCELLED || 0,
+        ]);
+        data.push([""]);
+      }
+
+      // === WORK TYPE DISTRIBUTION ===
+      if (
+        analytics.workTypeDistribution &&
+        analytics.workTypeDistribution.length > 0
+      ) {
+        data.push(["⚙️ WORK TYPE DISTRIBUTION"]);
+        data.push([""]);
+        data.push(["Work Type", "Hours", "Percentage"]);
+        const totalHours = analytics.workTypeDistribution.reduce(
+          (sum, item) =>
+            sum +
+            (typeof item.hours === "number"
+              ? item.hours
+              : parseFloat(item.hours || "0")),
+          0
+        );
+        analytics.workTypeDistribution.forEach((item) => {
+          const hours =
+            typeof item.hours === "number"
+              ? item.hours
+              : parseFloat(item.hours || "0");
+          const percentage =
+            totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : "0";
+          data.push([item.workType, hours.toFixed(1), `${percentage}%`]);
+        });
+        data.push([""]);
+      }
+
+      // === PRIORITY DISTRIBUTION ===
+      if (analytics.distribution?.byPriority) {
+        data.push(["⚡ TASK PRIORITY DISTRIBUTION"]);
+        data.push([""]);
+        data.push(["Priority", "Count"]);
+        data.push(["High", analytics.distribution.byPriority.HIGH || 0]);
+        data.push(["Medium", analytics.distribution.byPriority.MEDIUM || 0]);
+        data.push(["Low", analytics.distribution.byPriority.LOW || 0]);
+        data.push([""]);
+      }
+
+      // === TIME ANALYSIS ===
+      data.push(["⏱️ TIME ANALYSIS"]);
+      data.push([""]);
+      data.push(["Metric", "Hours"]);
+      data.push(["Total Estimated", analytics.estimation.totalEstimatedHours]);
+      data.push(["Total Actual", analytics.estimation.totalActualHours]);
+      data.push(["Variance", analytics.estimation.variance]);
+      data.push(["Remaining", analytics.burnRate.hoursRemaining]);
+      data.push([""]);
+
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet(data);
+
+      // Set column widths
+      ws["!cols"] = [
+        { wch: 35 }, // Column A - Labels
+        { wch: 20 }, // Column B - Values
+        { wch: 25 }, // Column C - Details
+        { wch: 15 }, // Column D
+        { wch: 15 }, // Column E
+        { wch: 15 }, // Column F
+        { wch: 15 }, // Column G
+      ];
+
+      // Add the worksheet
+      XLSX.utils.book_append_sheet(wb, ws, "Analytics Report");
+
+      // Save Excel file
+      XLSX.writeFile(
+        wb,
+        `analytics-report-${new Date().toISOString().split("T")[0]}.xlsx`
+      );
+    } catch (err) {
+      console.error("Error generating Excel:", err);
+      alert("Failed to generate Excel file. Please try again.");
     }
   };
 
@@ -241,7 +761,24 @@ export default function ManagerAnalytics() {
               Comprehensive team and project insights
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={exportToPDF}
+              disabled={exporting}
+              className="btn-primary flex items-center gap-2 px-4 py-2"
+              title="Export as PDF"
+            >
+              <Download className="w-4 h-4" />
+              Export PDF
+            </button>
+            <button
+              onClick={exportToExcel}
+              className="btn-primary flex items-center gap-2 px-4 py-2"
+              title="Export as Excel"
+            >
+              <FileText className="w-4 h-4" />
+              Export Excel
+            </button>
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
@@ -266,6 +803,12 @@ export default function ManagerAnalytics() {
             </select>
           </div>
         </div>
+        {exporting && (
+          <div className="mt-4 flex items-center gap-2 text-blue-400">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+            <span className="text-sm">Generating report...</span>
+          </div>
+        )}
       </div>
 
       {/* Overview Cards */}
@@ -335,7 +878,7 @@ export default function ManagerAnalytics() {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Velocity Trend */}
-        <div className="glass rounded-xl p-6">
+        <div className="glass rounded-xl p-6" ref={velocityChartRef}>
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Activity className="w-5 h-5 text-blue-400" />
             Velocity Trend
@@ -383,7 +926,7 @@ export default function ManagerAnalytics() {
         </div>
 
         {/* Task Status Distribution */}
-        <div className="glass rounded-xl p-6">
+        <div className="glass rounded-xl p-6" ref={statusChartRef}>
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-400" />
             Task Status Distribution
@@ -425,7 +968,7 @@ export default function ManagerAnalytics() {
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Team Performance */}
-        <div className="glass rounded-xl p-6">
+        <div className="glass rounded-xl p-6" ref={teamChartRef}>
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Users className="w-5 h-5 text-purple-400" />
             Team Performance
@@ -468,7 +1011,7 @@ export default function ManagerAnalytics() {
         </div>
 
         {/* Work Type Distribution */}
-        <div className="glass rounded-xl p-6">
+        <div className="glass rounded-xl p-6" ref={workTypeChartRef}>
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Clock className="w-5 h-5 text-orange-400" />
             Work Type Distribution

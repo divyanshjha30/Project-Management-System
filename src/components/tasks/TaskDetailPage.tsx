@@ -9,6 +9,8 @@ import {
   TrendingUp,
   FileText,
   X,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import { apiClient } from "../../lib/api";
 
@@ -89,6 +91,8 @@ export function TaskDetailPage() {
   const [showAddWorkLog, setShowAddWorkLog] = useState(false);
   const [showAddEstimate, setShowAddEstimate] = useState(false);
   const [selectedSubtask, setSelectedSubtask] = useState<string | null>(null);
+  const [editingSubtask, setEditingSubtask] = useState<Subtask | null>(null);
+  const [editingTask, setEditingTask] = useState(false);
 
   // Form States
   const [newSubtask, setNewSubtask] = useState({
@@ -111,6 +115,16 @@ export function TaskDetailPage() {
     estimate_type: "INITIAL" as TaskEstimate["estimate_type"],
     notes: "",
     subtask_id: "",
+  });
+
+  const [editedTask, setEditedTask] = useState({
+    title: "",
+    description: "",
+    status: "NEW" as Task["status"],
+    priority: "MEDIUM" as Task["priority"],
+    estimated_hours: "",
+    start_date: "",
+    end_date: "",
   });
 
   useEffect(() => {
@@ -156,6 +170,57 @@ export function TaskDetailPage() {
       loadTaskData();
     } catch (err: any) {
       setError(err.message || "Failed to add subtask");
+    }
+  };
+
+  const handleUpdateSubtask = async () => {
+    if (!editingSubtask) return;
+
+    try {
+      await apiClient.put(`/tasks/subtasks/${editingSubtask.subtask_id}`, {
+        title: editingSubtask.title,
+        description: editingSubtask.description,
+        status: editingSubtask.status,
+        priority: editingSubtask.priority,
+        estimated_hours: editingSubtask.estimated_hours,
+      });
+
+      setEditingSubtask(null);
+      loadTaskData();
+    } catch (err: any) {
+      setError(err.message || "Failed to update subtask");
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    if (!confirm("Are you sure you want to delete this subtask?")) return;
+
+    try {
+      await apiClient.delete(`/tasks/subtasks/${subtaskId}`);
+      loadTaskData();
+    } catch (err: any) {
+      setError(err.message || "Failed to delete subtask");
+    }
+  };
+
+  const handleUpdateTask = async () => {
+    try {
+      await apiClient.put(`/tasks/${taskId}`, {
+        title: editedTask.title,
+        description: editedTask.description,
+        status: editedTask.status,
+        priority: editedTask.priority,
+        estimated_hours: editedTask.estimated_hours
+          ? parseFloat(editedTask.estimated_hours)
+          : null,
+        start_date: editedTask.start_date || null,
+        end_date: editedTask.end_date || null,
+      });
+
+      setEditingTask(false);
+      loadTaskData();
+    } catch (err: any) {
+      setError(err.message || "Failed to update task");
     }
   };
 
@@ -331,6 +396,24 @@ export function TaskDetailPage() {
               <p className="text-gray-400 mb-4">{task.description}</p>
             )}
           </div>
+          <button
+            onClick={() => {
+              setEditedTask({
+                title: task.title,
+                description: task.description || "",
+                status: task.status,
+                priority: task.priority || "MEDIUM",
+                estimated_hours: task.estimated_hours?.toString() || "",
+                start_date: task.start_date?.split("T")[0] || "",
+                end_date: task.end_date?.split("T")[0] || "",
+              });
+              setEditingTask(true);
+            }}
+            className="btn-ghost px-3 py-1 text-sm"
+            title="Edit Task"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Task Dates */}
@@ -482,15 +565,31 @@ export function TaskDetailPage() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setSelectedSubtask(subtask.subtask_id);
-                      setShowAddWorkLog(true);
-                    }}
-                    className="btn-ghost text-sm"
-                  >
-                    Log Work
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setEditingSubtask(subtask)}
+                      className="btn-ghost px-3 py-1 text-sm"
+                      title="Edit Subtask"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSubtask(subtask.subtask_id)}
+                      className="btn-ghost px-3 py-1 text-sm text-red-400 hover:text-red-300"
+                      title="Delete Subtask"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedSubtask(subtask.subtask_id);
+                        setShowAddWorkLog(true);
+                      }}
+                      className="btn-ghost text-sm"
+                    >
+                      Log Work
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -778,6 +877,134 @@ export function TaskDetailPage() {
         </div>
       )}
 
+      {/* Edit Subtask Modal */}
+      {editingSubtask && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="glass rounded-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">Edit Subtask</h3>
+              <button
+                onClick={() => setEditingSubtask(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Title</label>
+                <input
+                  type="text"
+                  value={editingSubtask.title}
+                  onChange={(e) =>
+                    setEditingSubtask({
+                      ...editingSubtask,
+                      title: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                  placeholder="Subtask title"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={editingSubtask.description || ""}
+                  onChange={(e) =>
+                    setEditingSubtask({
+                      ...editingSubtask,
+                      description: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                  rows={3}
+                  placeholder="Subtask description"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Estimated Hours
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={editingSubtask.estimated_hours || ""}
+                  onChange={(e) =>
+                    setEditingSubtask({
+                      ...editingSubtask,
+                      estimated_hours: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                  placeholder="0"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Status</label>
+                <select
+                  value={editingSubtask.status}
+                  onChange={(e) =>
+                    setEditingSubtask({
+                      ...editingSubtask,
+                      status: e.target.value as Subtask["status"],
+                    })
+                  }
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                >
+                  <option value="PENDING">Pending</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Priority
+                </label>
+                <select
+                  value={editingSubtask.priority}
+                  onChange={(e) =>
+                    setEditingSubtask({
+                      ...editingSubtask,
+                      priority: e.target.value as Subtask["priority"],
+                    })
+                  }
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setEditingSubtask(null)}
+                  className="flex-1 btn-ghost"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateSubtask}
+                  disabled={!editingSubtask.title}
+                  className="flex-1 btn-primary disabled:opacity-50"
+                >
+                  Update Subtask
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add Estimate Modal */}
       {showAddEstimate && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -886,6 +1113,171 @@ export function TaskDetailPage() {
                   className="flex-1 btn-primary disabled:opacity-50"
                 >
                   Save Estimate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="glass rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">Edit Task</h3>
+              <button
+                onClick={() => setEditingTask(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Title</label>
+                <input
+                  type="text"
+                  value={editedTask.title}
+                  onChange={(e) =>
+                    setEditedTask({ ...editedTask, title: e.target.value })
+                  }
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                  placeholder="Task title"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={editedTask.description}
+                  onChange={(e) =>
+                    setEditedTask({
+                      ...editedTask,
+                      description: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                  rows={3}
+                  placeholder="Task description"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={editedTask.status}
+                    onChange={(e) =>
+                      setEditedTask({
+                        ...editedTask,
+                        status: e.target.value as Task["status"],
+                      })
+                    }
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                  >
+                    <option value="NEW">New</option>
+                    <option value="ASSIGNED">Assigned</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="COMPLETED">Completed</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Priority
+                  </label>
+                  <select
+                    value={editedTask.priority}
+                    onChange={(e) =>
+                      setEditedTask({
+                        ...editedTask,
+                        priority: e.target.value as Task["priority"],
+                      })
+                    }
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="CRITICAL">Critical</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Estimated Hours
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={editedTask.estimated_hours}
+                  onChange={(e) =>
+                    setEditedTask({
+                      ...editedTask,
+                      estimated_hours: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editedTask.start_date}
+                    onChange={(e) =>
+                      setEditedTask({
+                        ...editedTask,
+                        start_date: e.target.value,
+                      })
+                    }
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editedTask.end_date}
+                    onChange={(e) =>
+                      setEditedTask({
+                        ...editedTask,
+                        end_date: e.target.value,
+                      })
+                    }
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setEditingTask(false)}
+                  className="flex-1 btn-ghost"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateTask}
+                  disabled={!editedTask.title}
+                  className="flex-1 btn-primary disabled:opacity-50"
+                >
+                  Update Task
                 </button>
               </div>
             </div>
